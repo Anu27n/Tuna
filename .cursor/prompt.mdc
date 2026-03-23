@@ -1,110 +1,69 @@
 ---
-alwaysApply: false
+alwaysApply: true
 ---
-i am starting the tuna task first read  the rule.mdc file word by word and understand it deeply , do not hallucinate at any point and remember each and every point throughout the task provided further , dont assume anything just follow the rules strictly and always apply it in further task given 
+IMPORTANT: One prompt at a time. Never skip. Never assume. Never infer.
 
+# PROMPT 1 - Setup
+Read D:\Tuna\.cursor\rule.mdc file word by word. Confirm. Stop.
 
+# PROMPT 2 - Load context
+Read conversation history completely. Confirm. Don't analyze yet. in prompt.txt file
 
+# PROMPT 3 - Rate prompt
+Score 1-5. Two lines max referencing missing inputs, realism, or difficulty.
 
+# PROMPT 4a - Load Response A
+Read ResponseA.txt. List only:
+- Files modified
+- Commands run
+- Outputs shown
+One sentence: what did it actually accomplish? Confirm. Don't analyze yet.
 
-now i am going to provide you the conversation , you have to read it word by word and understand it deeply
+# PROMPT 4b - Response A Strengths
+Only use evidence from your 4a list. No proof → don't write it.
+Min 200 chars. Specific files/commands. Casual tone. Under 5 lines.
 
+# PROMPT 4c - Response A Weaknesses
+Check: verification, false claims, scope creep, edge cases, instructions.
+Use category codes. No fabrication. Contradict a strength → fix it first.
 
+# PROMPT 5a - Load Response B
+Read ResponseB.txt. List only:
+- Files modified
+- Commands run  
+- Outputs shown
+One sentence: what did it actually accomplish? Don't compare to A. Confirm. Don't analyze yet.
 
-now i am going to provide you final user prompt you have to read it , analyze it and rate accordingly as per the rule.mdc 
+# PROMPT 5b - Response B Strengths
+Only use evidence from your 5a list. No proof → don't write it.
+Min 200 chars. Specific files/commands. Casual tone. Under 5 lines.
 
+# PROMPT 5c - Response B Weaknesses
+Check: verification, false claims, scope creep, edge cases, instructions.
+Use category codes. No fabrication. Contradict a strength → fix it first.
 
+# PROMPT 6 - Compare and rate
+For each of 9 dimensions write:
+- A evidence: [what A did]
+- B evidence: [what B did]
+- Winner: [A/B/tie] because [one reason]
+- Rating: [1-8]
 
+Then check:
+Similar weaknesses → 4-5 only
+No evidence → change to 4
+One completely fails → only then use 1-2 or 7-8
+All 9 identical → automatic rejection, vary them
 
+# PROMPT 7 - Verify ratings
+List all 9 ratings. One justification sentence each.
+No justification → change to 4.
+Worse response must have higher numbers.
+"Similar" or "both" in evidence → must be 4-5.
+Show corrected final ratings.
 
-Read rule.mdc word by word. Don't respond yet. Just confirm you've read it.
-
-
-
-
-
-
-
-Read ResponseA.txt completely. Do not analyze yet. 
-List ONLY the actual files modified, commands run, and outputs shown.
-Do not infer or assume anything not explicitly visible in the text.
-
-
-
-
-
-
-Now evaluate Response A based ONLY on what you listed above.
-For every strength you write, quote the exact file/command/output from ResponseA.txt that proves it.
-If you can't find proof → don't write it.
-You MUST find at least one weakness.
-No dashes, no symbols, casual human tone, under 5 lines per section.
-
-
-
-
-Before we move to B, check your Response A evaluation:
-- Does any strength contradict a weakness?
-- Did you mention anything not visible in ResponseA.txt?
-- Fix any issues now
-
-
-
-
-
-Read ResponseB.txt completely. Do not analyze yet. 
-List ONLY the actual files modified, commands run, and outputs shown.
-Do not infer or assume anything not explicitly visible in the text.
-
-
-
-
-
-Now evaluate Response B based ONLY on what you listed above.
-For every strength you write, quote the exact file/command/output from ResponseA.txt that proves it.
-If you can't find proof → don't write it.
-You MUST find at least one weakness.
-No dashes, no symbols, casual human tone, under 5 lines per section.
-
-
-
-
-
-Before we move to next step, check your Response B evaluation:
-- Does any strength contradict a weakness?
-- Did you mention anything not visible in ResponseB.txt?
-- Fix any issues now
-
-
-
-
-Now compare A and B and answer all 9 questions from rule.mdc.
-For each question write:
-1. Evidence from ResponseA.txt that supports your answer
-2. Evidence from ResponseB.txt that supports your answer
-3. Rating (1-8)
-Rules:
-- If both have similar issues → rating must be 4-5, not extreme
-- Only use 1-2 or 7-8 if one completely fails while other succeeds
-- Every rating needs direct evidence from the actual files
-- Do not infer or assume anything not visible in the files
-
-
-
-
-
-Write the final rationale that covers all 9 questions above.
-It must logically match every rating you just gave.
-No dashes, no symbols, no banned phrases from rule.mdc.
-Min 200 characters.
-Sound like a Slack message to a coworker — casual, direct, contractions.
-Don't contradict anything in your strengths or weaknesses sections.
-
-
-
-Before giving final ratings, verify:
-- Do your ratings match your written strengths/weaknesses?
-- If you said both have similar issues, are ratings in 4-5 range?
-- Does any strength for a response contradict its weakness?
-- Did you fabricate any file names, test counts, or commands?
-Fix anything wrong, then give final output.
+# PROMPT 8 - Rationale
+Must match every rating from Prompt 7.
+Min 200 chars. Casual Slack tone. No banned phrases.
+No two sentences start the same way.
+Specific to this task only. Stop.

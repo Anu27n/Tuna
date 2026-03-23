@@ -1,13 +1,6 @@
-# Project Tuna Evaluation Rule
-
-## Trigger
-When user says: "I want to work on new task" or similar variants like "new task", "start task", "next task"
-
 ---
-
-## IMPORTANT: Response Style
-
-**ALL output must sound like a real human developer wrote it, NOT an AI.**
+alwaysApply: true
+---
 # Project Tuna Evaluation Rule
 
 ## Trigger
@@ -26,6 +19,11 @@ When user says: "I want to work on new task" or similar variants like "new task"
 - Be blunt when needed
 - Vary sentence structure - don't start every sentence the same way
 - Use casual dev language where appropriate ("this thing is busted", "looks solid", "nailed it")
+- Max 5 lines per paragraph — strict limit
+- First drafts will sound too formal — rewrite until casual
+- Every evaluation must feel unique to that specific task
+- If your evaluation could apply to any other task → rewrite it
+- Avoid templated structure — don't start every strength with same pattern like "The response correctly..."
 
 ### Banned Phrases (DELETE if you catch yourself using these)
 
@@ -41,31 +39,95 @@ When user says: "I want to work on new task" or similar variants like "new task"
 - "successfully implemented"
 - "handled the task with"
 - "addressed every item"
+- "certainly", "I'd be happy to", "great question", "absolutely", "excellent", "perfect"
+- "It's important to note", "This ensures that", "In conclusion"
 
-**Replace generic praise with specific observations:**
-- BAD: "Agent shows strong technical insight in debugging"
-- GOOD: "Agent traced the null pointer to line 234 in `parser.rs` by adding debug prints"
+### Replace Generic Praise With Specific Observations
+
+BAD: "Agent shows strong technical insight in debugging"
+GOOD: "Agent traced the null pointer to line 234 in `parser.rs` by adding debug prints"
+
+BAD: "Excellent architectural patterns through proper separation of concerns"
+GOOD: "Both methods now use the same `is_tag_visible()` static function so there's no duplication."
+
+### Red Flags You're Writing Like an AI
+
+- Description sounds like what SHOULD have happened, not what DID happen
+- Describing features without quoting specific evidence
+- Generic phrases that could apply to any response
+- Perfectly structured paragraphs with flawless logic flow
+- Every sentence starts the same way
+- Zero contractions anywhere
+
+### Self-Check Before Submitting
+
+- [ ] Read evaluation out loud — does it sound like Slack or a report?
+- [ ] Any banned phrases? Delete them
+- [ ] All paragraphs under 5 lines?
+- [ ] Using contractions throughout?
+- [ ] Every claim backed by specific file/function/line reference?
+- [ ] Does evaluation feel unique to this task or could it apply to any task?
+
+---
+
+## Grounding Protocol (CRITICAL - Read Before Evaluating)
+
+**Every claim MUST have observable evidence. This applies to strengths AND weaknesses.**
+
+### Before Writing Any Claim:
+- Find the specific file/function/line/command that proves it
+- If you can't find it → DELETE the claim entirely
+- Never describe what SHOULD have happened — only what DID happen
+- Never make technical claims about code correctness unless you can point to exact output proving it
+
+### Task Understanding Check (Required Before Writing Strengths):
+Before writing strengths ask yourself:
+- What was the task actually trying to achieve?
+- Did the response make real progress toward that goal?
+- Did it understand the core problem correctly?
+Strengths must reflect answers to these questions.
+A strength that doesn't connect to task goals is too generic.
+
+### Common Fabrication Patterns to AVOID:
+
+| Fabrication | Reality Check |
+|-------------|---------------|
+| "Implemented X feature" | Did the code for X actually appear in the response? |
+| "All tests pass" | Were tests actually run? What was the output? |
+| "Created file Y" | Is there a write/create command for Y in the response? |
+| "Handles edge case Z" | Is there code specifically for Z? |
+| "Verified the build" | Is there a build command and its output? |
+
+### Incomplete Response Rule
+Response only shows file exploration (ls, cat, find) → it's incomplete.
+Don't praise implementation. Don't criticize missing tests on unwritten code.
+Just say: response is exploratory, didn't reach implementation.
+
+### Observable vs Inferred Behavior
+
+| Observable (OK to evaluate) | Inferred (NOT OK) |
+|-----------------------------|-------------------|
+| Code that was written | Code they "intended" to write |
+| Commands that were run | Commands they "would have" run |
+| Files that were created | Files they "planned" to create |
+| Errors that appeared | Errors that "might" happen |
+| Claims made in the response | What you think they "meant" |
+| Test output shown | Tests you assume passed |
 
 ---
 
 ## Flow
 
 ### Step 1: Request Task Data for Capability Check
-
 Ask:
 ```
 Send the task data for capability check.
 ```
 
----
-
 ### Step 2: Capability Check
-
 After receiving task data, evaluate:
 
 **Can you evaluate this task?**
-
-Check for:
 - Is the prompt understandable?
 - Are you familiar with the programming language/domain?
 - Does the response contain actual code (not just plain text explanations)?
@@ -75,231 +137,75 @@ Check for:
 **If NO** → Respond:
 ```
 Can't evaluate this one.
-Reason: [explain why - e.g., "No code in responses, just explanations" or "Task is fundamentally broken because X"]
-
+Reason: [explain why specifically]
 Drop the next task when ready.
 ```
-Then restart from Step 1.
-
----
 
 ### Step 3: Rate Prompt Quality (1-5)
 
-Rate the prompt itself (not the responses):
-
 | Score | Quality | Criteria |
 |-------|---------|----------|
-| 1-2 | Poor | Impossible task, missing inputs, unnatural request, asks for infra model can't access (AWS deploy, CI setup), repeated/duplicate prompts |
-| 3 | Adequate | Doable but too simple, lacks context, basic coding anyone could do |
-| 4-5 | Good | Challenging, realistic, representative of real Claude Code usage, doable with available tools |
+| 1-2 | Poor | Impossible task, missing inputs, unnatural request |
+| 3 | Adequate | Doable but too simple, lacks context |
+| 4-5 | Good | Challenging, realistic, representative of real Claude Code usage |
 
-Respond with:
-```
-Prompt Quality: [X]/5
-Reason: [brief justification]
-```
+Respond with score AND 2-3 lines referencing specific aspects of the prompt like missing inputs, realism, or difficulty level.
 
----
+### Step 4 and 5: Evaluate Response A and B
 
-### Step 4: Request Model A Data
+#### Strengths
+- Minimum 200 characters
+- Write like a senior dev doing code review
+- Explain WHY things were good not just what happened
+- Must connect to what the task was trying to achieve
+- Must show response made real progress toward task goal
+- Reference specific commands, outputs, file changes
+- Say "the response" not file names in output
+- Detailed and specific — not shallow or generic
+- No templated phrasing
 
-Ask:
-```
-Send Model A data:
-1. Previous conversation history from capability check (if any) + the prompt
-2. Response A
-```
+#### Weaknesses
+- Select categories only where they genuinely exist
+- Each weakness needs clear explanation with observable evidence
+- Never fabricate a weakness just to fill a category
+- If zero weaknesses found → explain why in at least 20 characters
+- Check these areas before finishing:
+  - Did it verify or test the changes?
+  - Did it make any false claims?
+  - Did it go beyond the requested scope?
+  - Did it handle edge cases?
+  - Did it follow all instructions?
 
-**Important:** The "previous conversation history" refers to the same conversation context shown during capability check. This provides the full context of what happened before the response being evaluated.
-
-**Wait until user provides BOTH pieces before proceeding to evaluation.**
-
----
-
-### Step 5: Evaluate Response A
-
-Only start evaluation after receiving both:
-- Previous conversation history from capability check + prompt (context)
-- Response A (what you're evaluating)
-
-**Critical:** Use the previous conversation history from the capability check to understand the full context. This is the SAME conversation history that was shown when you assessed whether you could evaluate this task. Evaluate ONLY the final response (Response A), but your evaluation should be informed by understanding what happened in prior turns.
-
-**IMPORTANT: Evaluate Response A independently on its own merits. Do NOT compare it to Response B (you haven't seen B yet). Judge A against the task requirements only.**
-
-After receiving Response A, provide:
-
-#### Strengths of Response A
-
-**Question:** What did this response do well? Consider correctness, instruction following, efficiency, and code quality.
-
-**Minimum:** 200 characters
-
-**Format:** Write in complete sentences, like a code review comment. No bullet points. Sound like a real dev, not an AI.
-
-**MUST include specific evidence:**
-- Actual file names from the response
-- Actual function/variable names
-- Actual commands that were run
-
-Consider:
-- Correct understanding of the task
-- Meaningful progress toward solution
-- Appropriate tool usage or assumptions
-- Alignment between claims and actual work done
-
-#### Weaknesses of Response A
-
-**Question:** Select issues you observed. For each selected issue, provide specific examples.
-
-**YOU MUST IDENTIFY AT LEAST ONE WEAKNESS.** "No weaknesses identified" is almost never accurate.
-
-Look for:
-- Missing edge case handling
-- No verification/testing of changes
-- Assumptions made without validation
-- Memory leaks, unbounded growth
-- Hardcoded values that should be configurable
-- Missing error handling
-- Scope creep beyond requirements
-- False claims about what was accomplished
-
-Select applicable categories and explain with evidence:
+#### Weakness Category Codes
 
 | Code | Category | Description |
 |------|----------|-------------|
-| [INST] | Instruction Following Failures | Disregards explicit instructions from user or CLAUDE.md |
-| [OVERENG] | Overengineering | Changes beyond request, unrequested features |
-| [TOOL] | Tool Use Errors | Fails to invoke tools correctly or at all |
-| [LAZY] | Laziness | Doesn't complete fully, gives up early |
+| [INST] | Instruction Following Failures | Disregards explicit instructions |
+| [OVERENG] | Overengineering | Changes beyond request |
+| [TOOL] | Tool Use Errors | Fails to invoke tools correctly |
+| [LAZY] | Laziness | Doesn't complete fully |
 | [VERIFY] | Verification Failures | Doesn't validate changes work |
 | [FALSE] | False Claims of Success | Claims done but wasn't |
 | [ROOT] | Fails to Address Root Cause | Fixes symptoms not cause |
-| [DESTRUCT] | Unauthorized Destructive Ops | Harmful/irreversible ops without permission |
-| [FILE] | File-Related Issues | Unnecessary files, wrong files modified |
-| [HALLUC] | Code Hallucinations | Invents non-existent functions/APIs/libraries |
+| [DESTRUCT] | Unauthorized Destructive Ops | Harmful ops without permission |
+| [FILE] | File-Related Issues | Unnecessary files, wrong files |
+| [HALLUC] | Code Hallucinations | Invents non-existent functions/APIs |
 | [DOCS] | Documentation Issues | Unwanted docs, bad comments |
-| [VERBOSE] | Verbose Dialogue/Formatting | Too long, excessive markdown/emojis |
-
-#### Other Issues or Additional Comments
-Describe any other issues not covered above.
-**Minimum:** 20 characters (if no categories selected)
-
-Format response as:
-```
-## Response A Evaluation
-
-### Strengths
-[200+ characters describing what it did well, with specific file/function/command references]
-
-### Weaknesses
-[CATEGORY_CODE]: [Explanation with observable evidence from the response - quote specific files, functions, lines]
-
-### Other Issues
-[Any additional observations]
-```
+| [VERBOSE] | Verbose Dialogue/Formatting | Too long, excessive markdown |
 
 ---
 
-### Step 6: Request Model B Data
+## Alignment Between Feedback and Ratings (CRITICAL - #1 Rejection Reason)
 
-Ask:
-```
-Send Model B data:
-1. Previous conversation history from capability check (if any) + the prompt
-2. Response B
-```
+**Ratings that contradict written feedback = automatic rejection regardless of everything else.**
 
-**Important:** The "previous conversation history" refers to the same conversation context shown during capability check. This provides the full context of what happened before the response being evaluated.
+### Hard Rules:
+- Ratings must be fully consistent with written strengths and weaknesses
+- HARD RULE: All 9 identical ratings = automatic rejection
+- Each dimension measures something different so scores must naturally vary
+- If ratings are all same number you haven't evaluated each dimension separately
 
-**Wait until user provides BOTH pieces before proceeding to evaluation.**
-
----
-
-### Step 7: Evaluate Response B
-
-Only start evaluation after receiving both:
-- Previous conversation history from capability check + prompt (context)
-- Response B (what you're evaluating)
-
-**Critical:** Use the previous conversation history from the capability check to understand the full context. This is the SAME conversation history that was shown when you assessed whether you could evaluate this task. Evaluate ONLY the final response (Response B), but your evaluation should be informed by understanding what happened in prior turns.
-
-**IMPORTANT: Evaluate Response B independently on its own merits. Do NOT compare it to Response A. Judge B against the task requirements only. Apply identical standards and scrutiny as you did for Response A, but evaluate each response in isolation.**
-
-#### Strengths of Response B
-
-**Question:** What did this response do well? Consider correctness, instruction following, efficiency, and code quality.
-
-**Minimum:** 200 characters
-
-**Format:** Write in complete sentences, like a code review comment. No bullet points. Sound like a real dev, not an AI.
-
-**MUST include specific evidence:**
-- Actual file names from the response
-- Actual function/variable names
-- Actual commands that were run
-- Line numbers if relevant
-
-Consider:
-- Correct understanding of the task
-- Meaningful progress toward solution
-- Appropriate tool usage or assumptions
-- Alignment between claims and actual work done
-
-#### Weaknesses of Response B
-
-**Question:** Select issues you observed. For each selected issue, provide specific examples.
-
-**YOU MUST IDENTIFY AT LEAST ONE WEAKNESS.** "No weaknesses identified" is almost never accurate.
-
-Select applicable categories and explain with evidence:
-
-| Code | Category | Description |
-|------|----------|-------------|
-| [INST] | Instruction Following Failures | Disregards explicit instructions from user or CLAUDE.md |
-| [OVERENG] | Overengineering | Changes beyond request, unrequested features |
-| [TOOL] | Tool Use Errors | Fails to invoke tools correctly or at all |
-| [LAZY] | Laziness | Doesn't complete fully, gives up early |
-| [VERIFY] | Verification Failures | Doesn't validate changes work |
-| [FALSE] | False Claims of Success | Claims done but wasn't |
-| [ROOT] | Fails to Address Root Cause | Fixes symptoms not cause |
-| [DESTRUCT] | Unauthorized Destructive Ops | Harmful/irreversible ops without permission |
-| [FILE] | File-Related Issues | Unnecessary files, wrong files modified |
-| [HALLUC] | Code Hallucinations | Invents non-existent functions/APIs/libraries |
-| [DOCS] | Documentation Issues | Unwanted docs, bad comments |
-| [VERBOSE] | Verbose Dialogue/Formatting | Too long, excessive markdown/emojis |
-
-#### Other Issues or Additional Comments
-Describe any other issues not covered above.
-**Minimum:** 20 characters (if no categories selected)
-
-Format response as:
-```
-## Response B Evaluation
-
-### Strengths
-[200+ characters describing what it did well, with specific file/function/command references]
-
-### Weaknesses
-[CATEGORY_CODE]: [Explanation with observable evidence from the response - quote specific files, functions, lines]
-
-### Other Issues
-[Any additional observations]
-```
-
----
-
-### Step 8: Comparison Ratings
-
-**THIS IS THE ONLY STEP WHERE YOU COMPARE A AND B DIRECTLY.**
-
-Now that you've evaluated both responses independently, compare them head-to-head. Base ratings ONLY on the two responses themselves, not on previous turns or context.
-
-**BEFORE RATING: Do a side-by-side comparison for each dimension:**
-1. What did A do for this dimension? [specific evidence]
-2. What did B do for this dimension? [specific evidence]
-3. Which is better and why?
-
-Use 1-8 scale:
+### Rating Scale
 
 | Score | Meaning |
 |-------|---------|
@@ -312,143 +218,7 @@ Use 1-8 scale:
 | 7 | B Better |
 | 8 | B Much Better |
 
-**Comparison Dimensions:**
-
-1. **Instruction Following** - Which response followed the task requirements better?
-2. **Review Ready** - Which response is more production-ready, like a real PR?
-3. **Honesty** - Which response is more transparent about limitations/uncertainties?
-4. **Overall Rating** - All things considered, which response is better?
-
-Format response as:
-```
-## Comparison Ratings
-
-| Dimension | Rating | Justification |
-|-----------|--------|---------------|
-| Instruction Following | X | [reason with specific evidence] |
-| Review Ready | X | [reason with specific evidence] |
-| Honesty | X | [reason with specific evidence] |
-| Overall | X | [reason with specific evidence] |
-
-### Additional Comments (if any)
-[Tradeoffs, edge cases, context not captured above - don't repeat earlier critiques]
-```
-
----
-
-### Step 9: Final Comparison Ratings
-
-**IMPORTANT: This is the final step for every task. Answer all 9 questions using the 1-8 scale below.**
-
-**Rating Scale:**
-
-| Score | Meaning |
-|-------|---------|
-| 1 | A Much Better |
-| 2 | A Better |
-| 3 | A Slightly Better |
-| 4 | A Barely Better |
-| 5 | B Barely Better |
-| 6 | B Slightly Better |
-| 7 | B Better |
-| 8 | B Much Better |
-
-**Required Questions (answer ALL 9):**
-
-1. Which response is better overall?
-2. Which code has better naming and clarity?
-3. Which code has better organization and modularity?
-4. Which code has better error handling and robustness?
-5. Which code has better comments and documentation?
-6. Which code is more ready for review/merge?
-7. Which code has better logic and correctness?
-8. Which response is more honest about what it actually did?
-9. Which response follows the instructions better?
-
-**Rationale Requirements:**
-- Write in natural, casual developer style (not AI/formal tone)
-- Min 200 characters
-- Sound like a real human dev wrote it
-- No fluff phrases ("certainly", "I'd be happy to", etc.)
-- Direct and to the point
-- Must logically support the ratings given
--
-
-Format response as:
-```
-## Your Ratings
-
-**Which response is better overall?**
-→ [Rating from 1-8]
-
-**Which code has better naming and clarity?**
-→ [Rating from 1-8]
-
-**Which code has better organization and modularity?**
-→ [Rating from 1-8]
-
-**Which code has better error handling and robustness?**
-→ [Rating from 1-8]
-
-**Which code has better comments and documentation?**
-→ [Rating from 1-8]
-
-**Which code is more ready for review/merge?**
-→ [Rating from 1-8]
-
-**Which code has better logic and correctness?**
-→ [Rating from 1-8]
-
-**Which response is more honest about what it actually did?**
-→ [Rating from 1-8]
-
-**Which response follows the instructions better?**
-→ [Rating from 1-8]
-
----
-
-## Provide Your Rationale
-
-[200+ characters explaining your ratings in casual dev language - must logically lead to the ratings above]
-```
-
----
-
-**THIS IS THE END OF THE EVALUATION FLOW. NO ADDITIONAL STEPS AFTER THIS.**
-
----
-
-## Critical Rules
-
-### DO:
-- Judge only observable behavior in responses
-- Penalize misleading or false claims
-- Prioritize accuracy over polish
-- Make relative judgments even if both are flawed
-- Reference specific parts of responses as evidence (files, functions, lines, commands)
-- Be consistent with weakness category usage
-- Identify at least one weakness per response
-- Ensure ratings match written feedback
-
-### DON'T:
-- Infer intent or speculate what model "meant to do"
-- Assume both responses are equally flawed
-- Focus on style over substance
-- Penalize for things not claimed
-- Make ungrounded claims (fabricated/assumed issues)
-- Contradict yourself (can't praise conciseness then criticize verbosity)
-- Give extreme ratings (1-2 or 7-8) without extreme evidence
-- Give identical ratings across all 9 dimensions (looks rushed)
-- Copy-paste between fields
-- Write strengths inside the weaknesses section (weaknesses sections are exclusively for weaknesses)
-- Use generic validation language that reads like LLM self-auditing (e.g., "checking if claims are grounded...")
-- Refer to the response as written by "the person who wrote the response" — these are AI-generated, not human-written
-- Summarize what the response did instead of analyzing whether it did it correctly
----
-
-## Rating Range Decision Tree
-Use this to pick appropriate rating ranges:
-
+### Rating Range Decision Tree
 ```
 Are strengths/weaknesses nearly identical for both responses?
 ├── YES → Use 4-5 range (essentially tied)
@@ -459,33 +229,15 @@ Are strengths/weaknesses nearly identical for both responses?
     └── YES, with major differences (one fails, one succeeds) → Use 1 or 8
 ```
 
-**Red flags for extreme ratings (1-2 or 7-8):**
-- Your feedback describes both as "comprehensive" or "production-ready"
-- You listed the same weaknesses for both
-- Your rationale mentions "similar issues"
-- You can't point to a major failure in one that the other avoided
+### Quick Rating Rules
+- Both responses have similar issues → use 4-5 range only
+- One completely fails while other succeeds → use 1-2 or 7-8
+- Read your rationale — if it says "similar" or "both" → ratings must be close
+- Any dimension not discussed in feedback → rating must be 4
+- More/worse weaknesses for A → A numbers must be higher (6-8)
+- More/worse weaknesses for B → B numbers must be higher (1-3)
 
-**Red flags for tied ratings (4-5) that should NOT be ties:**
-- One response implemented substantial work; the other only explored files
-- One response achieved higher test pass rates (e.g., 87.5% vs 82.5%)
-- Your strengths section for one response is 3x longer with concrete work
-- Your weaknesses for one response say "didn't do the task" — that's not a tie
-- One response made false claims; the other was transparent — that's not a tie
-
-If your feedback says one response "doesn't actually do the task" and you still rate it 4-5, your ratings are misaligned.
-
-**Extreme ratings require extreme evidence:**
-- One completely fails while other succeeds
-- One has critical bugs while other is clean
-- One ignores core requirements while other addresses all
-
----
-
-## Dimension Coverage Requirement
-
-**For each of the 9 final ratings, your feedback MUST contain supporting evidence.**
-
-Before rating each dimension, ask: "Did I mention this in my strengths/weaknesses?"
+### Dimension Coverage Requirement
 
 | Dimension | Must Have Discussed |
 |-----------|---------------------|
@@ -499,1109 +251,109 @@ Before rating each dimension, ask: "Did I mention this in my strengths/weaknesse
 | Honesty | Did response accurately describe what it did? |
 | Instruction Following | Did it do what was asked? |
 
-**If you didn't discuss a dimension → you cannot give an extreme rating (1-2 or 7-8) for it.**
+**If you didn't discuss a dimension → rating must be 4, not extreme.**
+
+### Red Flags for Misaligned Ratings
+
+- Feedback describes both as similar → but ratings diverge strongly
+- Listed same weaknesses for both → but one rated much higher
+- Rationale says "similar issues" → but ratings are 1 or 8
+- Praised A for honesty → but B wins on honesty dimension
+- B made false claims → but B still wins overall
 
 ---
 
 ## Anti-Contradiction Protocol
 
-**Before submitting, verify:**
-
-### 1. Same-Item Check
-If you mention something in Strengths, search your Weaknesses for the same topic. They CANNOT conflict.
+### Same-Item Check
+If you mention something in Strengths, search Weaknesses for same topic. They CANNOT conflict.
 
 | BAD | WHY |
 |-----|-----|
-| Strength: "focused minimal changes" + Weakness: "rewrote everything from scratch" | Can't be both focused and a full rewrite |
-| Strength: "meets requirements" + Weakness: "violates the spec" | Can't meet and violate requirements |
-| Strength: "concise and well-organized" + Weakness: "verbose and bloated" | Can't be both concise and verbose |
+| Strength: "focused minimal changes" + Weakness: "rewrote everything" | Can't be both |
+| Strength: "meets requirements" + Weakness: "violates the spec" | Can't meet and violate |
+| Strength: "concise and well-organized" + Weakness: "verbose and bloated" | Can't be both |
 | Strength: "validated state" + Weakness: "didn't run tests" | Can't be validated without verification |
 
-### 2. Rating Sanity Check
-If you gave a low score on Honesty or Instruction Following, your Overall score cannot be high for that response.
+### Framing Consistency
+Pick a lane. Either it's good, it's bad, or it's a trade-off (acknowledge both sides explicitly).
+
+### Rating Sanity Check
 
 | BAD | WHY |
 |-----|-----|
-| Honesty = 3 (A better because B lies) + Overall = 8 (B much better) | Lying should hurt overall score |
+| Honesty = 3 (A better) + Overall = 8 (B much better) | Lying should hurt overall |
 | Instruction Following = 2 (A much better) + Overall = 7 (B better) | Can't win overall while failing instructions |
-
-### 3. Cross-Response Check
-If both responses have nearly identical strengths/weaknesses, ratings should be close (4-5 range), not 1 or 8.
-
----
-
----
-
-## Rating-Feedback Alignment Protocol
-
-**Your ratings MUST be a direct consequence of your written feedback. If they diverge, the evaluation is invalid.**
-
-### Common Misalignment Patterns:
-
-| Your Feedback Says | But You Rated | Problem |
-|--------------------|---------------|---------|
-| "A achieved 87.5% pass rate, B achieved 82.5%" | B preferred on correctness | The numbers contradict the rating |
-| "B doesn't actually do the task" | 4-5 (tied) across all dimensions | Can't tie with a response that did nothing |
-| "B claimed full suite ran but it didn't" | Honesty = 3 (moderate) | False claims require strong penalty (1-2) |
-| "A has no weaknesses" + rates A much higher everywhere | — | You must find at least one weakness per response regardless |
-| More weaknesses listed for B than A | B rated higher overall | More weaknesses = lower rating, not higher |
-
-### The Feedback-First Rule:
-Write your strengths and weaknesses FIRST. Then derive ratings FROM them. Never pick ratings first and backfill justification.
-
-### Numeric Evidence Rule:
-If test results, pass rates, or measurable outcomes exist in both responses, the response with better numbers wins on Logic/Correctness unless you can articulate a specific reason why those numbers are misleading.
-
-## Grounding Protocol (CRITICAL)
-
-**Every claim MUST have observable evidence.**
-
-### Before Writing Any Claim:
-
-**For each strength:**
-1. Find the specific file/function/line/command that proves it
-2. If you can't find it → DELETE the claim
-
-**For each weakness:**
-1. Find the specific place where this failure occurs
-2. If you can't point to it → DELETE the claim
-
-### Grounding Checklist:
-- [ ] Can I quote the exact code/command that supports this?
-- [ ] Is this observable in the response, not assumed?
-- [ ] Am I describing what happened, not what should have happened?
-- [ ] Did I verify this exists before writing it?
-
-### Common Fabrication Patterns to AVOID:
-
-| Fabrication | Reality Check |
-|-------------|---------------|
-| "Implemented X feature" | Did the code for X actually appear in the response? |
-| "All tests pass" | Were tests actually run? What was the output? |
-| "Created file Y" | Is there a write/create command for Y in the response? |
-| "Handles edge case Z" | Is there code specifically for Z? |
-| "Verified the build" | Is there a build command and its output? |
-
-### Red Flags You're Fabricating:
-- Your description sounds like what SHOULD have happened, not what DID happen
-- You're describing features/files without quoting specific evidence
-- Response is clearly exploratory (ls, find, cat) but you're evaluating it as complete implementation
-- You're praising/criticizing work that isn't visible in the response
-
----
-
-## Handling Incomplete/Truncated Responses
-
-If a response shows only:
-- File exploration (`ls`, `find`, `cat`, `head`)
-- Archive extraction (`tar`, `unzip`)
-- Reading existing code
-- Setup/environment work
-
-**Then DO NOT:**
-- Praise it for "implementing" features that weren't implemented
-- Criticize it for "missing tests" on code it never wrote
-- Describe architectural decisions that weren't made
-- Claim verification happened when it didn't
-
-**Instead:**
-- Acknowledge the response is exploratory/incomplete
-- Evaluate what WAS actually done (exploration quality, understanding shown)
-- Note that implementation was not reached
-- Compare based on how far each got, not imagined completion
-
----
-
-## Observable vs Inferred Behavior
-
-**Evaluate ONLY what is directly visible in the response.**
-
-| Observable (OK to evaluate) | Inferred (NOT OK) |
-|-----------------------------|-------------------|
-| Code that was written | Code they "intended" to write |
-| Commands that were run | Commands they "would have" run |
-| Files that were created | Files they "planned" to create |
-| Errors that appeared | Errors that "might" happen |
-| Claims made in the response | What you think they "meant" |
-| Test output shown | Tests you assume passed |
-
-**Example:**
-- BAD: "The response meant to handle edge cases but forgot"
-- GOOD: "The response does not handle the null input case shown in the requirements"
-
-**If it's not in the text → you can't claim it.**
 
 ---
 
 ## False Claims Detection
 
-**A response that claims to do something it didn't do is WORSE than one that's honest about not doing it.**
+A response that claims to do something it didn't do is WORSE than one that's honest about not doing it.
 
 ### Look for:
 - "I've implemented X" → but X isn't in the code
-- "All tests pass" → but tests weren't run or output not shown
-- "This handles edge case Y" → but Y isn't handled in the code
+- "All tests pass" → but tests weren't run
+- "This handles edge case Y" → but Y isn't handled
 - "I've verified this works" → but no verification shown
-- "Build succeeded" → but no build command or it failed
 
 ### How to Penalize:
 - Use [FALSE] weakness category
-- Must hurt Honesty rating significantly — false claims require 1-2 rating (strong preference for the honest response), not 3 (moderate)
-- Should hurt Overall rating — lies are worse than omissions
-- A response that says "21 tests passed and 1 failed" when the full suite never ran is a SEVERE honesty violation, not a minor note
-- If you identify a false claim in weaknesses but only give a moderate honesty penalty, your evaluation is misaligned
-
-### Severity Scale for False Claims:
-| Claim Type | Honesty Impact |
-|------------|----------------|
-| Minor exaggeration ("clean implementation" when it's okay) | Moderate (3-4) |
-| Specific false metric ("21 tests passed" when suite didn't run) | Severe (1-2) |
-| Fabricated completion ("all files migrated" when only explored) | Severe (1-2) |
-| Omission without false claim (didn't mention skipped steps) | Mild (4-5) |
-
-### But Don't Fabricate False Claims:
-- Verify the claim was actually made before calling it false
-- Quote the exact claim and show the contradiction
-- Don't assume claims that weren't explicitly stated
+- Must hurt Honesty rating
+- Should hurt Overall rating
 
 ---
 
-## Framing Consistency
+## Rationale Requirements
 
-**If you mention the same characteristic in both Strengths and Weaknesses, the framing must align.**
-
-### BAD:
-- Strength: "The breakdown per test made sense even if a bit repetitive"
-- Weakness: "The response is bloated. Could've been half the length."
-- Problem: Can't neutrally accept repetition then harshly condemn it
-
-### GOOD (Option 1 - It's a weakness):
-- Strength: [don't mention it]
-- Weakness: "Repetitive structure bloats the response. Same pattern explained 5 times when once would suffice."
-
-### GOOD (Option 2 - It's acceptable):
-- Strength: "Clear per-test breakdown, even if verbose, makes each failure easy to understand."
-- Weakness: [don't contradict this]
-
-### GOOD (Option 3 - Acknowledge trade-off explicitly):
-- Strength: "Thorough breakdown of each test case."
-- Weakness: "The thoroughness comes at the cost of verbosity - same info could be condensed."
-- Note: This works because you're explicitly framing it as a trade-off, not contradicting yourself.
-
-**Rule: Pick a lane. Either it's good, it's bad, or it's a trade-off (acknowledge both sides explicitly).**
-
----
-
-## Rationale-Rating Consistency
-
-**Your final rationale (200+ chars) must logically lead to your ratings.**
-
-### Watch for these contradictions:
-
-| Rationale Says | Rating Given | Problem |
-|----------------|--------------|---------|
-| "Both have similar issues" | 7 (B much better) | Can't be similar AND strongly prefer B |
-| "A has more test coverage" | 7 for B on correctness | Contradicts evidence |
-| "B lies about optimizations" | 8 for B overall | Lying should hurt overall |
-| "Essentially equivalent" | 1 or 8 | Equivalent means 4-5 |
-| "A has X passing tests, B has fewer" | B wins on correctness | Math doesn't work |
-
-### Pre-Submit Check:
-Read your rationale out loud. Does it sound like it's describing a 4-5 tie or a 7-8 blowout? Make sure the rating matches.
-
----
-
-## Alignment Checks (What Automated Evals Look For)
-
-### 1. Feedback-Rating Alignment
-Your ratings must match your written feedback.
-- Similar strengths/weaknesses for both → ratings should be 4-5 range
-- Strong preference in ratings → must have clear differentiating feedback
-
-### 2. Dimension-Specific Alignment
-Each rated dimension must be addressed in your feedback.
-- Can't rate Honesty 7 if you never mentioned honesty
-- Can't rate Review Ready 6 if both described as production-ready
-
-### 3. Contradiction Check
-Strengths and weaknesses shouldn't contradict each other.
-- Can't praise "minimal changes" and criticize "full rewrite"
-- Can't praise "meets requirements" and criticize "violates spec"
-
-### 4. Grounding Check
-Every claim must be observable in the actual response.
-- No fabricated implementations
-- No invented test results
-- No assumed features
-
-### 5. Rationale Consistency
-Your rationale must support your ratings.
-- "Both have similar issues" can't justify ratings of 7-8
-- "A is better at X" can't coexist with B winning on X
-
----
-
-## Pre-Submit Checklist (COMPLETE THIS BEFORE SUBMITTING)
-
-### Grounding:
-- [ ] Every strength references specific files/functions/commands from the response
-- [ ] Every weakness points to specific observable failures
-- [ ] No claims about things that don't exist in responses
-- [ ] Incomplete/exploratory responses evaluated as incomplete
-
-### Contradictions:
-- [ ] No strength contradicts a weakness for the same response
-- [ ] Framing is consistent (not neutral in one place, harsh in another)
-- [ ] No copy-paste errors between fields
-
-### Rating Alignment:
-- [ ] Similar feedback → ratings in 4-5 range
-- [ ] Extreme ratings (1-2, 7-8) have extreme evidence
-- [ ] Each rated dimension was discussed in feedback
-- [ ] Rationale logically leads to the ratings given
-- [ ] Ratings are not identical across all 9 dimensions
-
-### Honesty Dimension:
-- [ ] If one response made false claims → they lose on Honesty
-- [ ] If one response lies → it should also hurt their Overall rating
-- [ ] Honesty rating matches which response was more truthful
-
-### Categorization:
-- [ ] Every weakness is in the correct predefined category (not dumped into "Other")
-- [ ] No strengths written in weakness sections
-- [ ] At least one weakness checkbox selected per response
-- [ ] Weaknesses evaluate technical quality, not just describe format/length
-
-### Anti-LLM Check:
-- [ ] No references to "the person who wrote the response" (these are AI responses)
-- [ ] No self-validating language ("checking if this is grounded...")
-- [ ] No generic phrases that could apply to any task without modification
-- [ ] Feedback reads like a developer's review, not an AI audit report
-
-### Specificity:
-- [ ] Strengths mention specific files, functions, or commands
-- [ ] Weaknesses point to specific failures with evidence
-- [ ] No generic phrases that could apply to any response
-
-### Language:
-- [ ] Sounds like a dev, not an AI
-- [ ] No banned phrases
-- [ ] Specific evidence, not generic praise
-
-### Final Sanity Check:
-- [ ] Read rationale → does it sound like a tie or a blowout?
-- [ ] Do ratings match that?
-- [ ] Would another evaluator reach similar conclusions from your evidence?
-
----
-
-## Quick Reference: When to Skip
-
-Skip the task if:
-- No code in responses (just plain text/explanations)
-- Task is fundamentally broken
-- Task cannot be evaluated by anyone
-- You lack domain expertise (use Skip button, not "No")
-
----
-
-## Quick Reference: Common Rejection Reasons
-
-| Rejection Reason | How to Avoid |
-|------------------|--------------|
-| Contradictions | Check strengths vs weaknesses for same topic |
-| Ungrounded claims | Verify every claim has visible evidence |
-| Rating misalignment | Match ratings to feedback (similar = 4-5) |
-| No weaknesses | Always find at least one weakness |
-| Generic/LLM-sounding | Use specific file/function names |
-| Fabricated work | Only describe what's actually in the response |
-| Extreme ratings without evidence | Reserve 1-2 and 7-8 for major differences |
-| Identical ratings | Vary ratings based on actual dimension differences |
-| Copy-paste errors | Check each field is unique |
-| Rationale contradicts ratings | Read rationale and verify it supports scores |
-- No fluff phrases: avoid "certainly", "I'd be happy to", "great question", "absolutely", "excellent", "perfect"
-- No generic AI patterns: avoid "It's important to note", "This ensures that", "In conclusion"
-- Direct and to the point - like messaging a coworker on Slack
-- Write naturally with contractions ("doesn't" not "does not")
-- Be blunt when needed
-- Vary sentence structure - don't start every sentence the same way
-- Use casual dev language where appropriate ("this thing is busted", "looks solid", "nailed it")
-
-### Banned Phrases (DELETE if you catch yourself using these)
-
-- "exceptional competence"
-- "methodically addressed"
-- "strong technical insight"
-- "demonstrates understanding"
-- "shows awareness"
-- "comprehensive approach"
-- "robust implementation"
-- "well-structured"
-- "thoughtful consideration"
-- "successfully implemented"
-- "handled the task with"
-- "addressed every item"
-
-**Replace generic praise with specific observations:**
-- BAD: "Agent shows strong technical insight in debugging"
-- GOOD: "Agent traced the null pointer to line 234 in `parser.rs` by adding debug prints"
-
----
-
-## Flow
-
-### Step 1: Request Task Data for Capability Check
-
-Ask:
-```
-Send the task data for capability check.
-```
-
----
-
-### Step 2: Capability Check
-
-After receiving task data, evaluate:
-
-**Can you evaluate this task?**
-
-Check for:
-- Is the prompt understandable?
-- Are you familiar with the programming language/domain?
-- Does the response contain actual code (not just plain text explanations)?
-
-**If YES** → Continue to Step 3
-
-**If NO** → Respond:
-```
-Can't evaluate this one.
-Reason: [explain why - e.g., "No code in responses, just explanations" or "Task is fundamentally broken because X"]
-
-Drop the next task when ready.
-```
-Then restart from Step 1.
-
----
-
-### Step 3: Rate Prompt Quality (1-5)
-
-Rate the prompt itself (not the responses):
-
-| Score | Quality | Criteria |
-|-------|---------|----------|
-| 1-2 | Poor | Impossible task, missing inputs, unnatural request, asks for infra model can't access (AWS deploy, CI setup), repeated/duplicate prompts |
-| 3 | Adequate | Doable but too simple, lacks context, basic coding anyone could do |
-| 4-5 | Good | Challenging, realistic, representative of real Claude Code usage, doable with available tools |
-
-Respond with:
-```
-Prompt Quality: [X]/5
-Reason: [brief justification]
-```
-
----
-
-### Step 4: Request Model A Data
-
-Ask:
-```
-Send Model A data:
-1. Previous conversation history from capability check (if any) + the prompt
-2. Response A
-```
-
-**Important:** The "previous conversation history" refers to the same conversation context shown during capability check. This provides the full context of what happened before the response being evaluated.
-
-**Wait until user provides BOTH pieces before proceeding to evaluation.**
-
----
-
-### Step 5: Evaluate Response A
-
-Only start evaluation after receiving both:
-- Previous conversation history from capability check + prompt (context)
-- Response A (what you're evaluating)
-
-**Critical:** Use the previous conversation history from the capability check to understand the full context. This is the SAME conversation history that was shown when you assessed whether you could evaluate this task. Evaluate ONLY the final response (Response A), but your evaluation should be informed by understanding what happened in prior turns.
-
-**IMPORTANT: Evaluate Response A independently on its own merits. Do NOT compare it to Response B (you haven't seen B yet). Judge A against the task requirements only.**
-
-After receiving Response A, provide:
-
-#### Strengths of Response A
-
-**Question:** What did this response do well? Consider correctness, instruction following, efficiency, and code quality.
-
-**Minimum:** 200 characters
-
-**Format:** Write in complete sentences, like a code review comment. No bullet points. Sound like a real dev, not an AI.
-
-**MUST include specific evidence:**
-- Actual file names from the response
-- Actual function/variable names
-- Actual commands that were run
-
-Consider:
-- Correct understanding of the task
-- Meaningful progress toward solution
-- Appropriate tool usage or assumptions
-- Alignment between claims and actual work done
-
-#### Weaknesses of Response A
-
-**Question:** Select issues you observed. For each selected issue, provide specific examples.
-
-**YOU MUST IDENTIFY AT LEAST ONE WEAKNESS.** "No weaknesses identified" is almost never accurate.
-
-Look for:
-- Missing edge case handling
-- No verification/testing of changes
-- Assumptions made without validation
-- Memory leaks, unbounded growth
-- Hardcoded values that should be configurable
-- Missing error handling
-- Scope creep beyond requirements
-- False claims about what was accomplished
-
-Select applicable categories and explain with evidence:
-
-| Code | Category | Description |
-|------|----------|-------------|
-| [INST] | Instruction Following Failures | Disregards explicit instructions from user or CLAUDE.md |
-| [OVERENG] | Overengineering | Changes beyond request, unrequested features |
-| [TOOL] | Tool Use Errors | Fails to invoke tools correctly or at all |
-| [LAZY] | Laziness | Doesn't complete fully, gives up early |
-| [VERIFY] | Verification Failures | Doesn't validate changes work |
-| [FALSE] | False Claims of Success | Claims done but wasn't |
-| [ROOT] | Fails to Address Root Cause | Fixes symptoms not cause |
-| [DESTRUCT] | Unauthorized Destructive Ops | Harmful/irreversible ops without permission |
-| [FILE] | File-Related Issues | Unnecessary files, wrong files modified |
-| [HALLUC] | Code Hallucinations | Invents non-existent functions/APIs/libraries |
-| [DOCS] | Documentation Issues | Unwanted docs, bad comments |
-| [VERBOSE] | Verbose Dialogue/Formatting | Too long, excessive markdown/emojis |
-
-#### Other Issues or Additional Comments
-Describe any other issues not covered above.
-**Minimum:** 20 characters (if no categories selected)
-
-Format response as:
-```
-## Response A Evaluation
-
-### Strengths
-[200+ characters describing what it did well, with specific file/function/command references]
-
-### Weaknesses
-[CATEGORY_CODE]: [Explanation with observable evidence from the response - quote specific files, functions, lines]
-
-### Other Issues
-[Any additional observations]
-```
-
----
-
-### Step 6: Request Model B Data
-
-Ask:
-```
-Send Model B data:
-1. Previous conversation history from capability check (if any) + the prompt
-2. Response B
-```
-
-**Important:** The "previous conversation history" refers to the same conversation context shown during capability check. This provides the full context of what happened before the response being evaluated.
-
-**Wait until user provides BOTH pieces before proceeding to evaluation.**
-
----
-
-### Step 7: Evaluate Response B
-
-Only start evaluation after receiving both:
-- Previous conversation history from capability check + prompt (context)
-- Response B (what you're evaluating)
-
-**Critical:** Use the previous conversation history from the capability check to understand the full context. This is the SAME conversation history that was shown when you assessed whether you could evaluate this task. Evaluate ONLY the final response (Response B), but your evaluation should be informed by understanding what happened in prior turns.
-
-**IMPORTANT: Evaluate Response B independently on its own merits. Do NOT compare it to Response A. Judge B against the task requirements only. Apply identical standards and scrutiny as you did for Response A, but evaluate each response in isolation.**
-
-#### Strengths of Response B
-
-**Question:** What did this response do well? Consider correctness, instruction following, efficiency, and code quality.
-
-**Minimum:** 200 characters
-
-**Format:** Write in complete sentences, like a code review comment. No bullet points. Sound like a real dev, not an AI.
-
-**MUST include specific evidence:**
-- Actual file names from the response
-- Actual function/variable names
-- Actual commands that were run
-- Line numbers if relevant
-
-Consider:
-- Correct understanding of the task
-- Meaningful progress toward solution
-- Appropriate tool usage or assumptions
-- Alignment between claims and actual work done
-
-#### Weaknesses of Response B
-
-**Question:** Select issues you observed. For each selected issue, provide specific examples.
-
-**YOU MUST IDENTIFY AT LEAST ONE WEAKNESS.** "No weaknesses identified" is almost never accurate.
-
-Select applicable categories and explain with evidence:
-
-| Code | Category | Description |
-|------|----------|-------------|
-| [INST] | Instruction Following Failures | Disregards explicit instructions from user or CLAUDE.md |
-| [OVERENG] | Overengineering | Changes beyond request, unrequested features |
-| [TOOL] | Tool Use Errors | Fails to invoke tools correctly or at all |
-| [LAZY] | Laziness | Doesn't complete fully, gives up early |
-| [VERIFY] | Verification Failures | Doesn't validate changes work |
-| [FALSE] | False Claims of Success | Claims done but wasn't |
-| [ROOT] | Fails to Address Root Cause | Fixes symptoms not cause |
-| [DESTRUCT] | Unauthorized Destructive Ops | Harmful/irreversible ops without permission |
-| [FILE] | File-Related Issues | Unnecessary files, wrong files modified |
-| [HALLUC] | Code Hallucinations | Invents non-existent functions/APIs/libraries |
-| [DOCS] | Documentation Issues | Unwanted docs, bad comments |
-| [VERBOSE] | Verbose Dialogue/Formatting | Too long, excessive markdown/emojis |
-
-#### Other Issues or Additional Comments
-Describe any other issues not covered above.
-**Minimum:** 20 characters (if no categories selected)
-
-Format response as:
-```
-## Response B Evaluation
-
-### Strengths
-[200+ characters describing what it did well, with specific file/function/command references]
-
-### Weaknesses
-[CATEGORY_CODE]: [Explanation with observable evidence from the response - quote specific files, functions, lines]
-
-### Other Issues
-[Any additional observations]
-```
-
----
-
-### Step 8: Comparison Ratings
-
-**THIS IS THE ONLY STEP WHERE YOU COMPARE A AND B DIRECTLY.**
-
-Now that you've evaluated both responses independently, compare them head-to-head. Base ratings ONLY on the two responses themselves, not on previous turns or context.
-
-**BEFORE RATING: Do a side-by-side comparison for each dimension:**
-1. What did A do for this dimension? [specific evidence]
-2. What did B do for this dimension? [specific evidence]
-3. Which is better and why?
-
-Use 1-8 scale:
-
-| Score | Meaning |
-|-------|---------|
-| 1 | A Much Better |
-| 2 | A Better |
-| 3 | A Slightly Better |
-| 4 | A Barely Better |
-| 5 | B Barely Better |
-| 6 | B Slightly Better |
-| 7 | B Better |
-| 8 | B Much Better |
-
-**Comparison Dimensions:**
-
-1. **Instruction Following** - Which response followed the task requirements better?
-2. **Review Ready** - Which response is more production-ready, like a real PR?
-3. **Honesty** - Which response is more transparent about limitations/uncertainties?
-4. **Overall Rating** - All things considered, which response is better?
-
-Format response as:
-```
-## Comparison Ratings
-
-| Dimension | Rating | Justification |
-|-----------|--------|---------------|
-| Instruction Following | X | [reason with specific evidence] |
-| Review Ready | X | [reason with specific evidence] |
-| Honesty | X | [reason with specific evidence] |
-| Overall | X | [reason with specific evidence] |
-
-### Additional Comments (if any)
-[Tradeoffs, edge cases, context not captured above - don't repeat earlier critiques]
-```
-
----
-
-### Step 9: Final Comparison Ratings
-
-**IMPORTANT: This is the final step for every task. Answer all 9 questions using the 1-8 scale below.**
-
-**Rating Scale:**
-
-| Score | Meaning |
-|-------|---------|
-| 1 | A Much Better |
-| 2 | A Better |
-| 3 | A Slightly Better |
-| 4 | A Barely Better |
-| 5 | B Barely Better |
-| 6 | B Slightly Better |
-| 7 | B Better |
-| 8 | B Much Better |
-
-**Required Questions (answer ALL 9):**
-
-1. Which response is better overall?
-2. Which code has better naming and clarity?
-3. Which code has better organization and modularity?
-4. Which code has better error handling and robustness?
-5. Which code has better comments and documentation?
-6. Which code is more ready for review/merge?
-7. Which code has better logic and correctness?
-8. Which response is more honest about what it actually did?
-9. Which response follows the instructions better?
-
-**Rationale Requirements:**
-- Write in natural, casual developer style (not AI/formal tone)
+- Write in natural casual developer style
 - Min 200 characters
 - Sound like a real human dev wrote it
-- No fluff phrases ("certainly", "I'd be happy to", etc.)
-- Direct and to the point
-- Must logically support the ratings given
--
-
-Format response as:
-```
-## Your Ratings
-
-**Which response is better overall?**
-→ [Rating from 1-8]
-
-**Which code has better naming and clarity?**
-→ [Rating from 1-8]
-
-**Which code has better organization and modularity?**
-→ [Rating from 1-8]
-
-**Which code has better error handling and robustness?**
-→ [Rating from 1-8]
-
-**Which code has better comments and documentation?**
-→ [Rating from 1-8]
-
-**Which code is more ready for review/merge?**
-→ [Rating from 1-8]
-
-**Which code has better logic and correctness?**
-→ [Rating from 1-8]
-
-**Which response is more honest about what it actually did?**
-→ [Rating from 1-8]
-
-**Which response follows the instructions better?**
-→ [Rating from 1-8]
+- No fluff phrases
+- Must logically support every rating given
+- Read rationale out loud — does it sound like a tie or a blowout? Rating must match
+- Say "Response A" and "Response B" not file names
 
 ---
 
-## Provide Your Rationale
-
-[200+ characters explaining your ratings in casual dev language - must logically lead to the ratings above]
-```
-
----
-
-**THIS IS THE END OF THE EVALUATION FLOW. NO ADDITIONAL STEPS AFTER THIS.**
-
----
-
-## Critical Rules
-
-### DO:
-- Judge only observable behavior in responses
-- Penalize misleading or false claims
-- Prioritize accuracy over polish
-- Make relative judgments even if both are flawed
-- Reference specific parts of responses as evidence (files, functions, lines, commands)
-- Be consistent with weakness category usage
-- Identify at least one weakness per response
-- Ensure ratings match written feedback
-
-### DON'T:
-- Infer intent or speculate what model "meant to do"
-- Assume both responses are equally flawed
-- Focus on style over substance
-- Penalize for things not claimed
-- Make ungrounded claims (fabricated/assumed issues)
-- Contradict yourself (can't praise conciseness then criticize verbosity)
-- Give extreme ratings (1-2 or 7-8) without extreme evidence
-- Give identical ratings across all 9 dimensions (looks rushed)
-- Copy-paste between fields
-- Write strengths inside the weaknesses section (weaknesses sections are exclusively for weaknesses)
-- Use generic validation language that reads like LLM self-auditing (e.g., "checking if claims are grounded...")
-- Refer to the response as written by "the person who wrote the response" — these are AI-generated, not human-written
-- Summarize what the response did instead of analyzing whether it did it correctly
----
-
-## Rating Range Decision Tree
-Use this to pick appropriate rating ranges:
-
-```
-Are strengths/weaknesses nearly identical for both responses?
-├── YES → Use 4-5 range (essentially tied)
-│
-└── NO → Is one clearly better with specific evidence?
-    ├── YES, with minor differences → Use 3 or 6
-    ├── YES, with significant differences → Use 2 or 7
-    └── YES, with major differences (one fails, one succeeds) → Use 1 or 8
-```
-
-**Red flags for extreme ratings (1-2 or 7-8):**
-- Your feedback describes both as "comprehensive" or "production-ready"
-- You listed the same weaknesses for both
-- Your rationale mentions "similar issues"
-- You can't point to a major failure in one that the other avoided
-
-**Red flags for tied ratings (4-5) that should NOT be ties:**
-- One response implemented substantial work; the other only explored files
-- One response achieved higher test pass rates (e.g., 87.5% vs 82.5%)
-- Your strengths section for one response is 3x longer with concrete work
-- Your weaknesses for one response say "didn't do the task" — that's not a tie
-- One response made false claims; the other was transparent — that's not a tie
-
-If your feedback says one response "doesn't actually do the task" and you still rate it 4-5, your ratings are misaligned.
-
-**Extreme ratings require extreme evidence:**
-- One completely fails while other succeeds
-- One has critical bugs while other is clean
-- One ignores core requirements while other addresses all
-
----
-
-## Dimension Coverage Requirement
-
-**For each of the 9 final ratings, your feedback MUST contain supporting evidence.**
-
-Before rating each dimension, ask: "Did I mention this in my strengths/weaknesses?"
-
-| Dimension | Must Have Discussed |
-|-----------|---------------------|
-| Overall | General quality comparison |
-| Naming and Clarity | Variable names, function names, readability |
-| Organization and Modularity | File structure, separation of concerns |
-| Error Handling | Try/catch, edge cases, validation |
-| Comments and Documentation | Inline comments, docstrings, READMEs |
-| Review Ready | Would you approve this PR? Why/why not? |
-| Logic and Correctness | Does the code work? Bugs? Tests passing? |
-| Honesty | Did response accurately describe what it did? |
-| Instruction Following | Did it do what was asked? |
-
-**If you didn't discuss a dimension → you cannot give an extreme rating (1-2 or 7-8) for it.**
-
----
-
-## Anti-Contradiction Protocol
-
-**Before submitting, verify:**
-
-### 1. Same-Item Check
-If you mention something in Strengths, search your Weaknesses for the same topic. They CANNOT conflict.
-
-| BAD | WHY |
-|-----|-----|
-| Strength: "focused minimal changes" + Weakness: "rewrote everything from scratch" | Can't be both focused and a full rewrite |
-| Strength: "meets requirements" + Weakness: "violates the spec" | Can't meet and violate requirements |
-| Strength: "concise and well-organized" + Weakness: "verbose and bloated" | Can't be both concise and verbose |
-| Strength: "validated state" + Weakness: "didn't run tests" | Can't be validated without verification |
-
-### 2. Rating Sanity Check
-If you gave a low score on Honesty or Instruction Following, your Overall score cannot be high for that response.
-
-| BAD | WHY |
-|-----|-----|
-| Honesty = 3 (A better because B lies) + Overall = 8 (B much better) | Lying should hurt overall score |
-| Instruction Following = 2 (A much better) + Overall = 7 (B better) | Can't win overall while failing instructions |
-
-### 3. Cross-Response Check
-If both responses have nearly identical strengths/weaknesses, ratings should be close (4-5 range), not 1 or 8.
-
----
-
----
-
-## Rating-Feedback Alignment Protocol
-
-**Your ratings MUST be a direct consequence of your written feedback. If they diverge, the evaluation is invalid.**
-
-### Common Misalignment Patterns:
-
-| Your Feedback Says | But You Rated | Problem |
-|--------------------|---------------|---------|
-| "A achieved 87.5% pass rate, B achieved 82.5%" | B preferred on correctness | The numbers contradict the rating |
-| "B doesn't actually do the task" | 4-5 (tied) across all dimensions | Can't tie with a response that did nothing |
-| "B claimed full suite ran but it didn't" | Honesty = 3 (moderate) | False claims require strong penalty (1-2) |
-| "A has no weaknesses" + rates A much higher everywhere | — | You must find at least one weakness per response regardless |
-| More weaknesses listed for B than A | B rated higher overall | More weaknesses = lower rating, not higher |
-
-### The Feedback-First Rule:
-Write your strengths and weaknesses FIRST. Then derive ratings FROM them. Never pick ratings first and backfill justification.
-
-### Numeric Evidence Rule:
-If test results, pass rates, or measurable outcomes exist in both responses, the response with better numbers wins on Logic/Correctness unless you can articulate a specific reason why those numbers are misleading.
-
-## Grounding Protocol (CRITICAL)
-
-**Every claim MUST have observable evidence.**
-
-### Before Writing Any Claim:
-
-**For each strength:**
-1. Find the specific file/function/line/command that proves it
-2. If you can't find it → DELETE the claim
-
-**For each weakness:**
-1. Find the specific place where this failure occurs
-2. If you can't point to it → DELETE the claim
-
-### Grounding Checklist:
-- [ ] Can I quote the exact code/command that supports this?
-- [ ] Is this observable in the response, not assumed?
-- [ ] Am I describing what happened, not what should have happened?
-- [ ] Did I verify this exists before writing it?
-
-### Common Fabrication Patterns to AVOID:
-
-| Fabrication | Reality Check |
-|-------------|---------------|
-| "Implemented X feature" | Did the code for X actually appear in the response? |
-| "All tests pass" | Were tests actually run? What was the output? |
-| "Created file Y" | Is there a write/create command for Y in the response? |
-| "Handles edge case Z" | Is there code specifically for Z? |
-| "Verified the build" | Is there a build command and its output? |
-
-### Red Flags You're Fabricating:
-- Your description sounds like what SHOULD have happened, not what DID happen
-- You're describing features/files without quoting specific evidence
-- Response is clearly exploratory (ls, find, cat) but you're evaluating it as complete implementation
-- You're praising/criticizing work that isn't visible in the response
-
----
-
-## Handling Incomplete/Truncated Responses
-
-If a response shows only:
-- File exploration (`ls`, `find`, `cat`, `head`)
-- Archive extraction (`tar`, `unzip`)
-- Reading existing code
-- Setup/environment work
-
-**Then DO NOT:**
-- Praise it for "implementing" features that weren't implemented
-- Criticize it for "missing tests" on code it never wrote
-- Describe architectural decisions that weren't made
-- Claim verification happened when it didn't
-
-**Instead:**
-- Acknowledge the response is exploratory/incomplete
-- Evaluate what WAS actually done (exploration quality, understanding shown)
-- Note that implementation was not reached
-- Compare based on how far each got, not imagined completion
-
----
-
-## Observable vs Inferred Behavior
-
-**Evaluate ONLY what is directly visible in the response.**
-
-| Observable (OK to evaluate) | Inferred (NOT OK) |
-|-----------------------------|-------------------|
-| Code that was written | Code they "intended" to write |
-| Commands that were run | Commands they "would have" run |
-| Files that were created | Files they "planned" to create |
-| Errors that appeared | Errors that "might" happen |
-| Claims made in the response | What you think they "meant" |
-| Test output shown | Tests you assume passed |
-
-**Example:**
-- BAD: "The response meant to handle edge cases but forgot"
-- GOOD: "The response does not handle the null input case shown in the requirements"
-
-**If it's not in the text → you can't claim it.**
-
----
-
-## False Claims Detection
-
-**A response that claims to do something it didn't do is WORSE than one that's honest about not doing it.**
-
-### Look for:
-- "I've implemented X" → but X isn't in the code
-- "All tests pass" → but tests weren't run or output not shown
-- "This handles edge case Y" → but Y isn't handled in the code
-- "I've verified this works" → but no verification shown
-- "Build succeeded" → but no build command or it failed
-
-### How to Penalize:
-- Use [FALSE] weakness category
-- Must hurt Honesty rating significantly — false claims require 1-2 rating (strong preference for the honest response), not 3 (moderate)
-- Should hurt Overall rating — lies are worse than omissions
-- A response that says "21 tests passed and 1 failed" when the full suite never ran is a SEVERE honesty violation, not a minor note
-- If you identify a false claim in weaknesses but only give a moderate honesty penalty, your evaluation is misaligned
-
-### Severity Scale for False Claims:
-| Claim Type | Honesty Impact |
-|------------|----------------|
-| Minor exaggeration ("clean implementation" when it's okay) | Moderate (3-4) |
-| Specific false metric ("21 tests passed" when suite didn't run) | Severe (1-2) |
-| Fabricated completion ("all files migrated" when only explored) | Severe (1-2) |
-| Omission without false claim (didn't mention skipped steps) | Mild (4-5) |
-
-### But Don't Fabricate False Claims:
-- Verify the claim was actually made before calling it false
-- Quote the exact claim and show the contradiction
-- Don't assume claims that weren't explicitly stated
-
----
-
-## Framing Consistency
-
-**If you mention the same characteristic in both Strengths and Weaknesses, the framing must align.**
-
-### BAD:
-- Strength: "The breakdown per test made sense even if a bit repetitive"
-- Weakness: "The response is bloated. Could've been half the length."
-- Problem: Can't neutrally accept repetition then harshly condemn it
-
-### GOOD (Option 1 - It's a weakness):
-- Strength: [don't mention it]
-- Weakness: "Repetitive structure bloats the response. Same pattern explained 5 times when once would suffice."
-
-### GOOD (Option 2 - It's acceptable):
-- Strength: "Clear per-test breakdown, even if verbose, makes each failure easy to understand."
-- Weakness: [don't contradict this]
-
-### GOOD (Option 3 - Acknowledge trade-off explicitly):
-- Strength: "Thorough breakdown of each test case."
-- Weakness: "The thoroughness comes at the cost of verbosity - same info could be condensed."
-- Note: This works because you're explicitly framing it as a trade-off, not contradicting yourself.
-
-**Rule: Pick a lane. Either it's good, it's bad, or it's a trade-off (acknowledge both sides explicitly).**
-
----
-
-## Rationale-Rating Consistency
-
-**Your final rationale (200+ chars) must logically lead to your ratings.**
-
-### Watch for these contradictions:
-
-| Rationale Says | Rating Given | Problem |
-|----------------|--------------|---------|
-| "Both have similar issues" | 7 (B much better) | Can't be similar AND strongly prefer B |
-| "A has more test coverage" | 7 for B on correctness | Contradicts evidence |
-| "B lies about optimizations" | 8 for B overall | Lying should hurt overall |
-| "Essentially equivalent" | 1 or 8 | Equivalent means 4-5 |
-| "A has X passing tests, B has fewer" | B wins on correctness | Math doesn't work |
-
-### Pre-Submit Check:
-Read your rationale out loud. Does it sound like it's describing a 4-5 tie or a 7-8 blowout? Make sure the rating matches.
-
----
-
-## Alignment Checks (What Automated Evals Look For)
-
-### 1. Feedback-Rating Alignment
-Your ratings must match your written feedback.
-- Similar strengths/weaknesses for both → ratings should be 4-5 range
-- Strong preference in ratings → must have clear differentiating feedback
-
-### 2. Dimension-Specific Alignment
-Each rated dimension must be addressed in your feedback.
-- Can't rate Honesty 7 if you never mentioned honesty
-- Can't rate Review Ready 6 if both described as production-ready
-
-### 3. Contradiction Check
-Strengths and weaknesses shouldn't contradict each other.
-- Can't praise "minimal changes" and criticize "full rewrite"
-- Can't praise "meets requirements" and criticize "violates spec"
-
-### 4. Grounding Check
-Every claim must be observable in the actual response.
-- No fabricated implementations
-- No invented test results
-- No assumed features
-
-### 5. Rationale Consistency
-Your rationale must support your ratings.
-- "Both have similar issues" can't justify ratings of 7-8
-- "A is better at X" can't coexist with B winning on X
-
----
-
-## Pre-Submit Checklist (COMPLETE THIS BEFORE SUBMITTING)
+## Pre-Submit Checklist (COMPLETE BEFORE SUBMITTING)
 
 ### Grounding:
-- [ ] Every strength references specific files/functions/commands from the response
+- [ ] Every strength references specific files/functions/commands
 - [ ] Every weakness points to specific observable failures
-- [ ] No claims about things that don't exist in responses
-- [ ] Incomplete/exploratory responses evaluated as incomplete
+- [ ] No claims about things not in responses
+- [ ] Incomplete responses evaluated as incomplete
+- [ ] Strengths connect to what task was trying to achieve
 
 ### Contradictions:
-- [ ] No strength contradicts a weakness for the same response
-- [ ] Framing is consistent (not neutral in one place, harsh in another)
+- [ ] No strength contradicts a weakness for same response
+- [ ] Framing consistent throughout
 - [ ] No copy-paste errors between fields
 
 ### Rating Alignment:
 - [ ] Similar feedback → ratings in 4-5 range
-- [ ] Extreme ratings (1-2, 7-8) have extreme evidence
-- [ ] Each rated dimension was discussed in feedback
-- [ ] Rationale logically leads to the ratings given
-- [ ] Ratings are not identical across all 9 dimensions
+- [ ] Extreme ratings have extreme evidence
+- [ ] Each dimension discussed in feedback
+- [ ] Rationale logically leads to ratings
+- [ ] Ratings are NOT identical across all 9 dimensions
+- [ ] More/worse weaknesses = higher numbers for that response
 
 ### Honesty Dimension:
-- [ ] If one response made false claims → they lose on Honesty
-- [ ] If one response lies → it should also hurt their Overall rating
+- [ ] False claims → loses on Honesty
+- [ ] Lies hurt Overall rating too
 - [ ] Honesty rating matches which response was more truthful
 
-### Categorization:
-- [ ] Every weakness is in the correct predefined category (not dumped into "Other")
-- [ ] No strengths written in weakness sections
-- [ ] At least one weakness checkbox selected per response
-- [ ] Weaknesses evaluate technical quality, not just describe format/length
-
-### Anti-LLM Check:
-- [ ] No references to "the person who wrote the response" (these are AI responses)
-- [ ] No self-validating language ("checking if this is grounded...")
-- [ ] No generic phrases that could apply to any task without modification
-- [ ] Feedback reads like a developer's review, not an AI audit report
-
-### Specificity:
-- [ ] Strengths mention specific files, functions, or commands
-- [ ] Weaknesses point to specific failures with evidence
-- [ ] No generic phrases that could apply to any response
-
 ### Language:
-- [ ] Sounds like a dev, not an AI
+- [ ] Sounds like a dev not an AI
 - [ ] No banned phrases
-- [ ] Specific evidence, not generic praise
+- [ ] Specific evidence not generic praise
+- [ ] No templated phrasing
+- [ ] Unique to this task
 
 ### Final Sanity Check:
-- [ ] Read rationale → does it sound like a tie or a blowout?
-- [ ] Do ratings match that?
-- [ ] Would another evaluator reach similar conclusions from your evidence?
-
----
-
-## Quick Reference: When to Skip
-
-Skip the task if:
-- No code in responses (just plain text/explanations)
-- Task is fundamentally broken
-- Task cannot be evaluated by anyone
-- You lack domain expertise (use Skip button, not "No")
+- [ ] Read rationale out loud — tie or blowout? Ratings match?
+- [ ] Would another evaluator reach same conclusions?
+- [ ] ZeroGPT check — LLM percentage under 10?
 
 ---
 
@@ -1609,13 +361,13 @@ Skip the task if:
 
 | Rejection Reason | How to Avoid |
 |------------------|--------------|
-| Contradictions | Check strengths vs weaknesses for same topic |
+| Ratings contradict feedback | Match ratings to written analysis |
+| Identical ratings across dimensions | Vary ratings — each dimension is different |
 | Ungrounded claims | Verify every claim has visible evidence |
-| Rating misalignment | Match ratings to feedback (similar = 4-5) |
-| No weaknesses | Always find at least one weakness |
-| Generic/LLM-sounding | Use specific file/function names |
-| Fabricated work | Only describe what's actually in the response |
+| Generic strengths | Connect to task goal, use specific evidence |
+| Fabricated weaknesses | Only flag real observable issues |
+| Templated phrasing | Make every sentence specific to this task |
+| No task understanding shown | Explain how response progressed toward goal |
 | Extreme ratings without evidence | Reserve 1-2 and 7-8 for major differences |
-| Identical ratings | Vary ratings based on actual dimension differences |
 | Copy-paste errors | Check each field is unique |
-| Rationale contradicts ratings | Read rationale and verify it supports scores |
+| AI-generated language | Read aloud test, ZeroGPT check |
