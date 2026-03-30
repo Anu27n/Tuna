@@ -4,7 +4,7 @@ alwaysApply: true
 IMPORTANT: One prompt at a time. Never skip. Never assume. Never infer.
 
 # PROMPT 1 - Setup
-Read D:\Tuna\.cursor\rule.mdc file word by word. Confirm. Stop.
+Read D:\Tuna\.cursor\rule.mdc file word by word AND D:\Tuna\.cursor\rejectionfeedback.mdc  . Confirm. Stop.
 
 # PROMPT 2 - Load context
 Read conversation history completely. Confirm. Don't analyze yet. in prompt.txt file
