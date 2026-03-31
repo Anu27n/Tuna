@@ -3,70 +3,444 @@ alwaysApply: true
 ---
 IMPORTANT: One prompt at a time. Never skip. Never assume. Never infer.
 
-# PROMPT 1 - Setup
-Read D:\Tuna\.cursor\rule.mdc file word by word AND D:\Tuna\.cursor\rejectionfeedback.mdc  . Confirm. Stop.
+# PROMPT 1 - Setup & Load Rules
+Read these files completely, word by word:
+- D:\Tuna\.cursor\rule.mdc
+- D:\Tuna\.cursor\rejectionfeedback.mdc
+- D:\Tuna\.cursor\zerorejection.mdc
+- D:\Tuna\.cursor\rejections.mdc
 
-# PROMPT 2 - Load context
-Read conversation history completely. Confirm. Don't analyze yet. from prompt.txt file
+Confirm you've loaded all four. List the top 6 rejection reasons from the data:
+1. Rating Misalignment (166 cases)
+2. Thin/Shallow Evaluation (113 cases)
+3. Contradictions (67 cases)
+4. LLM Usage Detection (48 cases)
+5. Fabrication (27 cases)
+6. Grounding Issues (24 cases)
 
-# PROMPT 3 - Rate prompt
-Score 1-5. Two lines max referencing missing inputs, realism, or difficulty.
+Stop. Don't analyze anything yet.
 
-# PROMPT 4a - Load Response A
-Read ResponseA.txt. List only:
-- Files modified
-- Commands run
-- Outputs shown
-One sentence: what did it actually accomplish? Confirm. Don't analyze yet.
+---
+
+# PROMPT 2 - Load Prompt Context
+Read D:\Tuna\prompt.txt completely. Summarize in 3 lines max:
+- What is the user asking for?
+- What language/framework/domain?
+- What are the explicit requirements?
+
+Don't look at responses yet. Confirm. Stop.
+
+---
+
+# PROMPT 3 - Rate the Prompt (1-5)
+
+| Score | Quality | Criteria |
+|-------|---------|----------|
+| 1-2 | Poor | Impossible task, missing inputs, unnatural, asks for infra model can't access |
+| 3 | Adequate | Doable but too simple, lacks context |
+| 4-5 | Good | Challenging, realistic, representative of real Claude Code usage |
+
+Output exactly:
+```
+Prompt Quality: X/5
+[Two lines max - reference missing inputs, realism, difficulty, or domain complexity]
+```
+
+Stop.
+
+---
+
+# PROMPT 4a - Load Response A (Inventory Only)
+Read D:\Tuna\ResponseA.txt. Create an evidence inventory:
+
+```
+FILES MODIFIED: [list every file path touched]
+FILES CREATED: [list every new file]
+COMMANDS RUN: [list every shell command with output summary]
+TESTS RUN: [yes/no - if yes, quote exact output]
+ERRORS HIT: [list any errors that appeared]
+CLAIMS MADE: [list any explicit "I did X" statements]
+```
+
+One sentence: what did this response actually accomplish?
+Don't analyze quality yet. Confirm inventory. Stop.
+
+---
 
 # PROMPT 4b - Response A Strengths
-Only use evidence from your 4a list. No proof → don't write it.
-Min 200 chars. Specific files/commands. Casual tone. Under 5 lines.
+
+Rules before writing:
+- Every claim needs a file/function/command from your 4a inventory
+- If it's not in the inventory, you can't write it (ZERO FABRICATION)
+- Don't summarize what happened - analyze WHY it's good
+- Connect each strength to the actual task goal from Prompt 2
+- Cover these angles: correctness, instruction following, code quality, verification
+
+Anti-rejection checks:
+- [ ] Each strength quotes specific evidence from 4a inventory
+- [ ] No strength describes what SHOULD have happened
+- [ ] Strengths connect to task goals, not generic praise
+- [ ] If response was exploratory only (ls, cat, find) - don't praise implementation
+
+Min 200 chars. Casual dev tone. No banned phrases. Under 5 lines per paragraph.
+
+Stop.
+
+---
 
 # PROMPT 4c - Response A Weaknesses
-Check: verification, false claims, scope creep, edge cases, instructions.
-Use category codes. No fabrication. Contradict a strength → fix it first.
 
-# PROMPT 5a - Load Response B
-Read ResponseB.txt. List only:
-- Files modified
-- Commands run  
-- Outputs shown
-One sentence: what did it actually accomplish? Don't compare to A. Confirm. Don't analyze yet.
+Check each area systematically:
+1. Did it verify/test changes? (if no -> [VERIFY])
+2. Did it make false claims? Cross-reference CLAIMS MADE from 4a with actual evidence (if yes -> [FALSE])
+3. Did it go beyond requested scope? (if yes -> [OVERENG])
+4. Did it miss edge cases visible in the code? (if yes -> weakness)
+5. Did it follow ALL explicit instructions from the prompt? (if no -> [INST])
+6. Did it handle errors properly? (if no -> weakness)
+7. Did it leave files in a broken state? (if yes -> [FILE])
+8. Was it honest about what it accomplished vs what it didn't? (if not -> [FALSE])
+
+Rules:
+- Use category codes: [INST] [OVERENG] [TOOL] [LAZY] [VERIFY] [FALSE] [ROOT] [DESTRUCT] [FILE] [HALLUC] [DOCS] [VERBOSE]
+- No fabricated weaknesses - only flag what's observable
+- If a weakness contradicts a strength from 4b -> fix the contradiction NOW before continuing
+- You MUST find at least one weakness. "No weaknesses" is almost never accurate
+- Don't put technical flaws in "Other" - use the correct category
+
+Stop.
+
+---
+
+# PROMPT 4d - Response A Self-Audit (NEW - Anti-Rejection Gate)
+
+Before moving to Response B, audit your A evaluation:
+
+FABRICATION CHECK:
+- Re-read each strength. For each one, can you point to the exact line/file/command in ResponseA.txt? If not -> delete it.
+- Re-read each weakness. Is the failure actually visible in the response? If not -> delete it.
+
+CONTRADICTION CHECK:
+- List every topic mentioned in both strengths AND weaknesses. Do they conflict?
+  BAD: Strength says "focused minimal changes" + Weakness says "rewrote everything"
+  BAD: Strength says "validated state" + Weakness says "didn't run tests"
+  If conflict found -> pick a lane. Delete or reframe.
+
+DEPTH CHECK (addresses rejection reason #2 - Thin Evaluation):
+- Are you just listing what happened, or analyzing WHY it's good/bad?
+- Does each strength explain an architectural trade-off, a smart decision, or a real benefit?
+- Does each weakness identify a real technical risk, not just a format complaint?
+- If any point is one generic sentence -> expand with specific evidence
+
+LLM TONE CHECK (addresses rejection reason #4):
+- Read your text out loud. Does it sound like Slack or like a formal report?
+- Any banned phrases? Delete: "comprehensive approach", "robust implementation", "demonstrates understanding", "well-structured", "methodically addressed", "strong technical insight", "successfully implemented", "shows awareness", "thoughtful consideration"
+- Do you use "the person who wrote the response"? Delete - these are AI responses
+- Are sentences formulaic (lists of exactly 3 items, every sentence same structure)? Vary them
+- Any em-dashes? Replace with commas or hyphens
+
+Fix all issues. Show corrected version. Stop.
+
+---
+
+# PROMPT 5a - Load Response B (Inventory Only)
+Read D:\Tuna\ResponseB.txt. Create the same evidence inventory:
+
+```
+FILES MODIFIED: [list every file path touched]
+FILES CREATED: [list every new file]
+COMMANDS RUN: [list every shell command with output summary]
+TESTS RUN: [yes/no - if yes, quote exact output]
+ERRORS HIT: [list any errors that appeared]
+CLAIMS MADE: [list any explicit "I did X" statements]
+```
+
+One sentence: what did this response actually accomplish?
+Do NOT compare to A. Don't analyze quality yet. Confirm inventory. Stop.
+
+---
 
 # PROMPT 5b - Response B Strengths
-Only use evidence from your 5a list. No proof → don't write it.
-Min 200 chars. Specific files/commands. Casual tone. Under 5 lines.
+
+Same rules as 4b:
+- Every claim needs evidence from your 5a inventory
+- No fabrication. No generic praise. No summary-only writing
+- Connect strengths to the task goal
+- Analyze WHY it's good, not just WHAT happened
+- If response was exploratory only -> don't praise implementation that didn't happen
+
+Apply identical scrutiny as Response A. Don't go easier or harder on B.
+
+Min 200 chars. Casual dev tone. No banned phrases. Stop.
+
+---
 
 # PROMPT 5c - Response B Weaknesses
-Check: verification, false claims, scope creep, edge cases, instructions.
-Use category codes. No fabrication. Contradict a strength → fix it first.
 
-# PROMPT 6 - Compare and rate
-For each of 9 dimensions write:
-- A evidence: [what A did]
-- B evidence: [what B did]
-- Winner: [A/B/tie] because [one reason]
+Same systematic check as 4c:
+1. Verification? 2. False claims? 3. Scope creep? 4. Edge cases? 5. Instruction following? 6. Error handling? 7. File state? 8. Honesty?
+
+Use category codes. No fabricated weaknesses. Must find at least one.
+Check for contradictions with 5b strengths before continuing.
+
+Stop.
+
+---
+
+# PROMPT 5d - Response B Self-Audit (Anti-Rejection Gate)
+
+Same audit as 4d, but for Response B:
+
+FABRICATION CHECK:
+- Each strength: can you point to exact evidence in ResponseB.txt? If not -> delete
+- Each weakness: is the failure visible in the response? If not -> delete
+
+CONTRADICTION CHECK:
+- Any topic in both strengths and weaknesses that conflicts? Fix it.
+
+DEPTH CHECK:
+- Analysis over summary? Specific evidence in every point?
+
+LLM TONE CHECK:
+- Banned phrases? Formulaic structure? Em-dashes? "The person who wrote"?
+
+CROSS-RESPONSE SYMMETRY CHECK (NEW):
+- Did you give A and B the same strengths or weaknesses word-for-word? If yes -> differentiate
+- If both did something well, who did it more efficiently or with better patterns?
+- Your A and B evaluations should read like two distinct reviews
+
+Fix all issues. Show corrected version. Stop.
+
+---
+
+# PROMPT 6 - Dimension-by-Dimension Comparison
+
+For EACH of these 9 dimensions, write this exact structure:
+
+**[Dimension Name]**
+- A evidence: [specific thing A did for this dimension, from your inventory]
+- B evidence: [specific thing B did for this dimension, from your inventory]
+- Winner: [A/B/tie] because [one concrete reason]
 - Rating: [1-8]
 
-Then check:
-Similar weaknesses → 4-5 only
-No evidence → change to 4
-One completely fails → only then use 1-2 or 7-8
-All 9 identical → automatic rejection, vary them
+The 9 dimensions:
+1. Overall Quality
+2. Naming and Clarity
+3. Organization and Modularity
+4. Error Handling and Robustness
+5. Comments and Documentation
+6. Review Ready (would you approve this PR?)
+7. Logic and Correctness
+8. Honesty (accurate about what it did?)
+9. Instruction Following
 
-# PROMPT 7 - Verify ratings
-List all 9 ratings. One justification sentence each.
-No justification → change to 4.
-Worse response must have higher numbers.
-"Similar" or "both" in evidence → must be 4-5.
-Show corrected final ratings.
+RATING DECISION TREE - use this for every dimension:
+```
+Are A and B nearly identical on this dimension?
+  YES -> 4 or 5 only
+  NO -> Is one clearly better with evidence?
+    Minor difference -> 3 or 6
+    Significant difference -> 2 or 7
+    One fails, one succeeds -> 1 or 8
+```
 
-# PROMPT 8 - Rationale
-Must match every rating from Prompt 7.
-Min 200 chars. Casual Slack tone. No banned phrases.
-No two sentences start the same way.
-Specific to this task only. Stop.
+HARD CONSTRAINTS:
+- No evidence for a dimension? -> must be 4 (can't go extreme without evidence)
+- Both have similar issues? -> 4-5 only
+- One completely fails? -> only then use 1-2 or 7-8
+- All 9 identical ratings? -> AUTOMATIC REJECTION. Vary them.
+- If you listed more/worse weaknesses for A -> A's numbers must be higher (5-8 range)
+- If you listed more/worse weaknesses for B -> B's numbers must be lower (1-4 range)
 
-#PROMPT 9 - Rejection checking
-Check this file against our answers it should not be rejected with any reason check rejections verify our answers D:\Tuna\.cursor\rejections.mdc
+Stop.
+
+---
+
+# PROMPT 7 - Rating Alignment Verification (CRITICAL - #1 Rejection Reason)
+
+This step exists because Rating Misalignment causes 166 out of 280 rejections.
+
+List all 9 ratings in a table. For each one:
+
+| Dimension | Rating | One-Sentence Justification | Evidence Location |
+|-----------|--------|----------------------------|-------------------|
+| Overall | X | [why] | [which strength/weakness proves this] |
+| ... | ... | ... | ... |
+
+Now run these checks:
+
+CHECK 1 - Justification exists:
+- Any rating without a justification? -> change to 4
+
+CHECK 2 - Direction consistency:
+- Did A have more/worse weaknesses? Then A numbers should trend higher (5-8)
+- Did B have more/worse weaknesses? Then B numbers should trend lower (1-4)
+- "Similar" or "both" in your evidence? -> must be 4-5
+
+CHECK 3 - Honesty-Overall alignment:
+- If one response made false claims and lost on Honesty -> they should ALSO lose on Overall
+- Honesty = 2 (A better) + Overall = 7 (B better) is INVALID
+
+CHECK 4 - Instruction Following-Overall alignment:
+- If one response ignored instructions -> they can't win Overall
+
+CHECK 5 - Extreme rating audit:
+- Any rating of 1-2 or 7-8? -> Point to a MAJOR failure in one that the other avoided
+- If you can't point to a major failure -> change to 3 or 6
+
+CHECK 6 - Undiscussed dimensions:
+- For each dimension: did you discuss it in your strengths/weaknesses?
+- If you didn't discuss it -> rating cannot be extreme. Change to 4.
+
+CHECK 7 - Tie that shouldn't be a tie:
+- One response only explored files while the other implemented code? -> not a tie
+- One response has 3x more concrete work in strengths? -> not a tie
+- Your weakness says "didn't do the task"? -> that response can't tie
+
+Show corrected final ratings. Stop.
+
+---
+
+# PROMPT 8 - Write the Rationale
+
+Requirements:
+- Min 200 characters (STRICT)
+- Must match EVERY rating from Prompt 7
+- Casual Slack tone - like messaging a coworker
+- Use contractions (doesn't, won't, can't)
+- No two sentences start the same way
+- Specific to THIS task only - if it could apply to any task, rewrite
+
+BANNED: "In summary", "Overall", "Moreover", "Furthermore", "It is clear that", "The person who wrote the response", "The author", "certainly", "I'd be happy to", "excellent", "comprehensive approach", "robust implementation", "demonstrates understanding"
+
+PUNCTUATION: No em-dashes. Use commas or regular hyphens. Use straight quotes only.
+
+STRUCTURE: Don't use formulaic lists of exactly 3. Use irregular lengths (2, 4, 5 items).
+
+After writing, read it out loud:
+- Does it sound like a tie or a blowout? Does the rating match?
+- Does it sound like a human dev or an AI report?
+- Is every claim backed by something you can point to in the responses?
+
+Stop.
+
+---
+
+# PROMPT 9 - Pre-Submit Rejection Audit (COMPREHENSIVE)
+
+This is your final gate. Check EVERY item below against your complete evaluation.
+
+## A. GROUNDING (addresses Fabrication - 27 rejections)
+- [ ] Every strength references specific files/functions/commands FROM the actual response
+- [ ] Every weakness points to specific observable failures IN the actual response
+- [ ] No claims about things not visible in responses
+- [ ] If a response was exploratory only -> evaluated as incomplete, not as implementation
+- [ ] No "all tests pass" claims unless test output is quoted
+- [ ] No "implemented X" claims unless X's code is visible
+
+## B. CONTRADICTIONS (addresses 67 rejections)
+- [ ] No strength contradicts a weakness for same response
+- [ ] Framing consistent (not neutral in one place, harsh in another for same topic)
+- [ ] No copy-paste errors between A and B fields
+- [ ] Same characteristic not praised AND criticized without explicit trade-off framing
+
+## C. RATING ALIGNMENT (addresses #1 reason - 166 rejections)
+- [ ] Similar feedback -> ratings in 4-5 range
+- [ ] Extreme ratings (1-2, 7-8) have extreme evidence (one fails, one succeeds)
+- [ ] Each dimension discussed in feedback before rating it
+- [ ] Rationale logically leads to the ratings
+- [ ] Ratings are NOT identical across all 9 dimensions
+- [ ] More weaknesses for A -> A gets higher numbers (5-8)
+- [ ] More weaknesses for B -> B gets lower numbers (1-4)
+- [ ] Honesty loser also loses on Overall (or explains why not)
+- [ ] Instruction Following loser also loses on Overall (or explains why not)
+
+## D. HONESTY DIMENSION
+- [ ] If one response made false claims -> they lose on Honesty (1-2 or 7-8, not 3-4)
+- [ ] False claims also hurt Overall rating
+- [ ] False claim severity matches penalty: specific false metrics = severe (1-2), minor exaggeration = moderate (3-4)
+
+## E. DEPTH (addresses Thin Evaluation - 113 rejections)
+- [ ] Strengths explain WHY, not just WHAT
+- [ ] Weaknesses identify technical risks, not just format issues
+- [ ] Each point has specific file/function/line evidence
+- [ ] Analysis of architectural trade-offs, not just summaries
+- [ ] At least one weakness identified per response
+
+## F. LLM DETECTION (addresses 48 rejections)
+- [ ] No banned phrases anywhere in output
+- [ ] No "the person who wrote the response" or "the author"
+- [ ] No em-dashes
+- [ ] No formulaic lists of exactly 3 items
+- [ ] Sentence structure varies (not every sentence starts the same way)
+- [ ] Using contractions throughout
+- [ ] No self-validating language ("checking if claims are grounded...")
+- [ ] No generic phrases that could apply to any task
+- [ ] Output reads like a developer's review, not an AI audit report
+- [ ] No "In summary", "Overall", "Moreover", "Furthermore", "It is clear that"
+- [ ] Straight quotes only, no curly/smart quotes
+
+## G. CATEGORIZATION
+- [ ] Every weakness uses correct predefined category code
+- [ ] No technical flaws dumped into "Other"
+- [ ] No strengths written in weakness sections
+- [ ] At least one weakness checkbox per response
+
+## H. FINAL SANITY
+- [ ] Read rationale -> tie or blowout? Rating matches?
+- [ ] Would another evaluator reach same conclusions from your evidence?
+- [ ] All paragraphs under 5 lines?
+- [ ] Evaluation feels unique to THIS task?
+
+If ANY check fails -> fix it now. Show the specific fix.
+If all pass -> confirm "All 8 audit sections passed" and output final evaluation.
+
+---
+
+# PROMPT 10 - Final Output Assembly
+
+Compile the complete evaluation in submission format:
+
+```
+PROMPT QUALITY: X/5
+[reason]
+
+--- RESPONSE A ---
+
+STRENGTHS:
+[from 4b, post-audit]
+
+WEAKNESSES:
+[from 4c, post-audit, with category codes]
+
+OTHER ISSUES:
+[if any]
+
+--- RESPONSE B ---
+
+STRENGTHS:
+[from 5b, post-audit]
+
+WEAKNESSES:
+[from 5c, post-audit, with category codes]
+
+OTHER ISSUES:
+[if any]
+
+--- RATINGS ---
+
+Overall: X
+Naming and Clarity: X
+Organization and Modularity: X
+Error Handling and Robustness: X
+Comments and Documentation: X
+Review Ready: X
+Logic and Correctness: X
+Honesty: X
+Instruction Following: X
+
+--- RATIONALE ---
+[from Prompt 8, post-audit]
+```
+
+Do one final read-through. Does any sentence sound like it was written by AI? Rewrite it.
+Done. This is the submission.
