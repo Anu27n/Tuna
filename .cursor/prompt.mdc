@@ -7,7 +7,7 @@ IMPORTANT: One prompt at a time. Never skip. Never assume. Never infer.
 Read D:\Tuna\.cursor\rule.mdc file word by word AND D:\Tuna\.cursor\rejectionfeedback.mdc  . Confirm. Stop.
 
 # PROMPT 2 - Load context
-Read conversation history completely. Confirm. Don't analyze yet. in prompt.txt file
+Read conversation history completely. Confirm. Don't analyze yet. from prompt.txt file
 
 # PROMPT 3 - Rate prompt
 Score 1-5. Two lines max referencing missing inputs, realism, or difficulty.
@@ -67,3 +67,6 @@ Must match every rating from Prompt 7.
 Min 200 chars. Casual Slack tone. No banned phrases.
 No two sentences start the same way.
 Specific to this task only. Stop.
+
+#PROMPT 9 - Rejection checking
+Check this file against our answers it should not be rejected with any reason check rejections verify our answers D:\Tuna\.cursor\rejections.mdc

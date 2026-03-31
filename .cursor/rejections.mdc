@@ -1,0 +1,145 @@
+---
+alwaysApply: true
+---
+The data contains rejection feedback for some kind of evaluation task (likely LLM response evaluation).
+
+Columns seem to be:
+Column A: Evaluator/Person Name
+Column B: Model/System (mostly "Cursor Auto")
+Column C: Feedback text
+I need to:
+Load the data.
+Inspect the structure.
+Summarize the content. Key points to look for:
+Common reasons for rejection (e.g., LLM usage, fabrication, contradictions, poor justification, rating misalignment).
+Frequency of these reasons.
+Top evaluators mentioned.
+Any trends or patterns in the feedback.
+Let's start by loading the data and inspecting it.
+The data has 401 rows.
+
+Column 0: Evaluator Name
+
+Column 1: Model/System (Cursor Auto)
+
+Column 2: Feedback
+
+There are many nulls in columns 0 and 1, which might be due to merged cells in the original sheet or just missing data. The feedback column (2) has 280 non-null values.
+
+I should clean the data:
+Rename columns to something meaningful: 'Evaluator', 'Model', 'Feedback'.
+Handle the nulls (maybe forward fill the evaluator names if they represent a block of feedback for the same person).
+Analyze the feedback text to find common themes.
+Let's check the first few rows again. Row 0 is a header row (mostly).
+
+Row 0: [NaN, 'Curosr model', 'Feedback']
+
+Row 1: ['Chirag Kumar', 'Cursor Auto', 'The Model B preference...']
+
+I'll drop the first row and rename columns.
+
+Then I'll forward fill the Evaluator and Model columns to associate feedback with the correct person.
+
+Common rejection themes to look for:
+"LLM usage" or "LLM-generated"
+"Fabrication" or "Fabricated"
+"Contradiction" or "Contradictory"
+"Alignment" or "Misalignment"
+"Justification" or "Justified"
+"Thin" or "Shallow"
+"Grounding"
+"Ratings"
+I will count occurrences of these keywords.
+The analysis is showing some clear trends.
+Most common issue: "Rating Misalignment" (166 occurrences) - ratings don't match the written feedback.
+Second most common: "Thin/Shallow Evaluation" (113 occurrences) - feedback is too brief or lacks technical depth.
+"Contradiction" (67 occurrences) - feedback contradicts itself or the ratings.
+"LLM Usage" (48 occurrences) - suspected or confirmed use of AI to write the feedback.
+"Fabrication" (27 occurrences) - claiming things happened in the responses that didn't.
+"Grounding Issues" (24 occurrences) - feedback not based on the actual content of the responses.
+Top evaluators with rejections: Abhay, Preet Kumar, Akash Chauhan, Madhav, Pranjal, Bhavesh Bade.
+
+I should create a visualization for the theme counts and maybe a breakdown of themes for the top evaluators.
+
+I'll also look for some specific examples of "LLM Usage" and "Fabrication" to highlight as they are high-severity issues.
+
+Let's refine the theme tagging and then create the charts.
+Python
+import altair as alt
+
+# Prepare data for theme chart
+theme_df = theme_counts.reset_index()
+theme_df.columns = ['Theme', 'Count']
+
+# Create theme chart
+theme_chart = alt.Chart(theme_df).mark_bar().encode(
+    x=alt.X('Count:Q', title='Number of Feedback Entries'),
+    y=alt.Y('Theme:N', sort='-x', title='Rejection Theme'),
+    color=alt.Color('Theme:N', legend=None),
+    tooltip=['Theme', 'Count']
+).properties(
+    title='Common Reasons for Rejection in Feedback'
+)
+
+theme_chart.save('rejection_themes.json')
+
+# Prepare data for evaluator chart
+eval_df = evaluator_counts.head(10).reset_index()
+eval_df.columns = ['Evaluator', 'Rejection Count']
+
+# Create evaluator chart
+eval_chart = alt.Chart(eval_df).mark_bar().encode(
+    x=alt.X('Rejection Count:Q', title='Number of Rejections'),
+    y=alt.Y('Evaluator:N', sort='-x', title='Evaluator Name'),
+    color=alt.Color('Rejection Count:Q', scale=alt.Scale(scheme='reds')),
+    tooltip=['Evaluator', 'Rejection Count']
+).properties(
+    title='Top 10 Evaluators with Most Rejections'
+)
+
+eval_chart.save('top_evaluators.json')
+
+# Let's find some specific "High Severity" examples (LLM Usage and Fabrication)
+high_severity_df = df_clean[df_clean['Themes'].apply(lambda x: 'LLM Usage' in x or 'Fabrication' in x)]
+high_severity_samples = high_severity_df[['Evaluator', 'Feedback']].head(5)
+
+print("High Severity Samples:")
+print(high_severity_samples)
+Code output
+High Severity Samples:
+        Evaluator                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  Feedback
+1    Chirag Kumar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                This evaluation shows that you read both responses and identified the core change they implemented (adding the serve command and wiring it into cmd/root.go). The strengths sections reference specific files and commands, which indicates you followed the implementation steps and verification logs.\r\n\r\nHowever, the weaknesses sections are too thin relative to the length and complexity of the responses. For Response A, the only real criticism is that the transcript is long due to setup steps. That does not meaningfully evaluate the quality of the implementation itself. There is no discussion of whether the command wiring is correct, whether the CLI behavior matches the requirement of producing no output, or whether the verification steps were sufficient.\r\n\r\nThe critique of Response B is similarly shallow. The overengineering point about the extra help text is minor and does not engage with the correctness of the implementation. Important areas that could have been evaluated such as whether the stubbed build environment affects confidence in the solution, whether the command integration matches the repository’s existing patterns, or whether the verification actually proves the behavior are not discussed.\r\n\r\nBecause of this, the evaluation does not provide balanced or substantive weaknesses for both responses. Most of the content is descriptive rather than analytical, and the critiques do not dig into the technical quality of the solutions.\r\n\r\nTo improve this, you should focus less on summarizing the transcripts and more on evaluating the implementation decisions. For example, assess whether the command wiring is correct, whether the verification meaningfully proves the feature works, and whether the build or stub environment introduces risks. Adding deeper technical critique would make the evaluation meet the expected thoroughness standard.
+4    Bhavesh Bade                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          There are many indicators in this task that a strong LLM usage pattern is detected. The validation check in the other weaknesses section is not something that is related to the response; instead, you validated the strengths/weaknesses you identified yourself, whether they are grounded or not, which is also another indication of you not reading the response yourself. Please make sure you avoid any LLMs, and your justifications are human-written.
+5   Akash Chauhan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       Both Response A and Response B contain only codebase exploration examining package.json, routes.tsx, existing page files, and layouts. Neither response contains any implementation. The claimed strengths for A describe added page components, woven grid layout, pagination logic, modal functionality, testing, and build verification. All fabricated. Response B strengths describe five files including WovenImageGrid.tsx, Pagination.tsx, ImageModal.tsx, route additions, i18n keys, and ResizeObserver logic. Also fabricated. Both responses end while viewing existing files with no gallery implementation. The reviewer positive feedback contradicts reality. Complete fabrication.
+9   Arpit Chauhan  This task seems LLM-generated. Your instruction following weakness refers to the response as 'the person who wrote the response.'. It is clear that the response is not written by a person; this is an indicator of LLM generated response, which results in an automatic rejection. Please make sure you avoid any LLMs at any cost. MAJOR MISALIGNMENT detected for Honesty rating. The Honesty dimension is rated 3 (moderate A preference), but the feedback shows Response B has a SEVERE honesty issue, while Response A is explicitly praised for honesty. Response A's strengths state: 'It ran all the tests. Found the one that was failing, which is the debug add test. It knew that this test was failing because of something that was already missing, not because of the changes it made.' Response B's weaknesses state: 'The summary says 21 tests passed and 1 failed... I do not see the full test suite running because the jade file is not there. So it is not true that the full suite was run. The full test suite never runs... The full suite claim is not true.' The rationale reinforces this: 'I think A is a little better when it comes to verification and honesty. It went through all the tests after adding the jade stub, and it was clear about the pre-existing debug_add failure. On the one hand, B only did a part of the tests but said it did the whole thing, which is not true.' This describes a major honesty violation for B (false claims about testing) versus transparency for A. A rating of 3 (moderate A preference) significantly understates this difference—it should be 1-2 (strong A preference) given that B made demonstrably false claims while A was transparent. MAJOR CONTRADICTION FOUND: The strength explicitly states 'It also ran a standalone equivalence script comparing old vs new on several edge cases and reported "all equivalence cases passed"' and 'The summary clearly separates "What I did not do, and why" and "What I did do", with before/after code snippets and a test-status note.' However, the 'instruction_following' weakness directly contradicts this by stating: 'The summary says 21 tests passed and 1 failed. It says the failure is due, to debug_add. I do not see the full test suite running because the jade file is not there. So it is not true that the full suite was run. The full test suite never runs. The tests are not complete. The full suite claim is not true.' These are logically incompatible because the strength praises Response B for successfully running tests and providing accurate test status notes, while the weakness criticizes it for making false claims about running the full test suite and providing inaccurate test information. The same aspect (accuracy and completeness of test execution reporting) is both praised and criticized.
+13   Roshan Alawe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                Strong LLM usage pattern detected. Especially in the strength section of response B, the file names are not naturally written, and the punctuation marks like dot, dash, and slash are written in words rather than in the actual symbols. Please try to avoid using any LLMs and use your own judgement to work on tasks.
+I have the analysis and the charts.
+
+Summary of data:
+Total rows with feedback: ~280.
+Key rejection themes: Rating Misalignment, Thin/Shallow Evaluation, Contradictions, LLM Usage, Fabrication, and Grounding Issues.
+Top evaluators with rejections: Abhay, Preet Kumar, Akash Chauhan, Madhav, Pranjal.
+High severity issues like LLM usage and Fabrication are present in a significant number of cases.
+I will structure the final response with:
+Overview of the data.
+Key takeaways:
+Predominance of rating/justification issues.
+Concerns over evaluation depth.
+High-severity integrity issues (LLM/Fabrication).
+Supporting details and charts.
+The analysis of the rejection feedback data reveals several critical areas where evaluator performance is falling short of standards. The dataset contains approximately 280 feedback entries, primarily for the "Cursor Auto" model, highlighting recurring issues with evaluation quality and integrity.
+Key Takeaways
+Pervasive Rating Misalignment: The most frequent reason for rejection (166 instances) is a disconnect between the numerical ratings and the written qualitative feedback. Evaluators often provide high ratings for responses while simultaneously listing significant weaknesses, or vice versa, leading to unjustified conclusions.
+Lack of Technical Depth: A significant portion of the feedback (113 instances) is criticized for being "thin" or "shallow." These evaluations often summarize what the model did rather than analyzing the technical quality, correctness, or architectural tradeoffs of the implementation.
+Integrity and Grounding Concerns: There are serious concerns regarding the authenticity of the evaluations. 48 cases were flagged for suspected LLM usage in writing the feedback, and 27 cases involved fabrication, where evaluators claimed the model performed actions (like running tests or editing specific files) that were not present in the actual transcript.
+Common Reasons for Rejection
+The following chart illustrates the frequency of different rejection themes identified in the feedback.
+Top Evaluators with Rejections
+The rejections are distributed across several evaluators, with the top 10 individuals accounting for a significant volume of the issues. This suggests a need for targeted training or stricter quality control for these specific contributors.
+High-Severity Examples
+Fabrication: In one instance, an evaluator (Akash Chauhan) claimed a model implemented complex features like a "woven grid layout" and "pagination logic," when the transcript showed only basic file exploration with no implementation work at all.
+LLM Usage: Multiple evaluators (e.g., Bhavesh Bade, Roshan Alawe) were flagged for using AI to generate their feedback. Indicators included formulaic phrasing, unnatural punctuation (writing out "dot" or "slash" in words), and referencing "the system" or "the organization" instead of the model responses.
+Internal Contradictions: Evaluators frequently contradict themselves within the same review. For example, praising a response for being "minimal and targeted" while simultaneously criticizing it for "overengineering" and "scope expansion."
+Assumptions made during analysis:
+Evaluator names were forward-filled to associate feedback entries with the person listed in the preceding rows.
+Keyword-based tagging was used to categorize feedback into themes; some entries may belong to multiple categories.
